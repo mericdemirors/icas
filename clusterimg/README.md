@@ -13,10 +13,9 @@ TO-ADD
 - parametre vererek main dosyasından çağrılabilir hale getir
 - terminalden çalıştırılabilir hale getir
 - seviye seviye azalan verbose
-- similarity dosyası satır satır kaydedilsin
+- user selection of copying or moving the images
 
 TO-TIDY
-- her şeyi argümanla
 - verbose ayarla
 
 TO-FIX
