@@ -9,13 +9,11 @@ TO-ADD
 - test code
 - openmp
 - C/C++/CUDA optimization
-- çalışan bi class haline getir
-- parametre vererek main dosyasından çağrılabilir hale getir
+- parametre vererek main dosyasından çağrılabilir fonksiyon haline getir
 - terminalden çalıştırılabilir hale getir
 - seviye seviye azalan verbose
 - user selection of copying or moving the images
 
 TO-TIDY
-- verbose ayarla
 
 TO-FIX
