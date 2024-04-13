@@ -399,6 +399,7 @@ if __name__ == "__main__":
                 new_file_name = file.replace("batch_0", "result")
                 os.rename(os.path.join(destination_container_folder, file),
                 os.path.join(destination_container_folder, new_file_name))
+            os.remove(os.path.join(destination_container_folder, "image_similarities_result.json"))
             print_verbose("f", "no merge needed to single batch")
         
     if option == "dontmerge":

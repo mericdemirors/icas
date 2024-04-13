@@ -20,4 +20,3 @@ TO-TIDY
 - verbose ayarla
 
 TO-FIX
-- no merge needed kısmında sim dosyasını sil
