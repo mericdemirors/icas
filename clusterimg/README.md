@@ -5,7 +5,6 @@ Tool for clustering mixed images
 TO-TRY
 
 TO-ADD
-- argparse ekle
 - test code
 - openmp
 - C/C++/CUDA optimization
@@ -17,4 +16,4 @@ TO-ADD
 TO-TIDY
 
 TO-FIX
-- fix interactive threshold selection to be suitable for all cases
+- fix interactive threshold selection

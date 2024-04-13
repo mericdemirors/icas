@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
+from skimage.metrics import structural_similarity
 import mplcursors
 
 from itertools import combinations
@@ -17,7 +18,7 @@ from helper_functions import cluster, calculate_similarity, print_verbose, threa
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Parameters')
     parser.add_argument('-path', '-p', type=str, default="", help='Path to image folder. default is: \"\"')
-    parser.add_argument('-method', '-m', type=str, default="", help='Method to use. default is: \"\"')
+    parser.add_argument('-method', '-m', type=str, default="", help='Method to use. SSIM: slow, good at big images imagehash: mid speed, good at small images minhash: fastest, mid solution for both cases ORB: slow and bad TM: slow and bad. default is: \"\"')
     parser.add_argument('-option', '-o', type=str, default="", help='Option of process. default is: \"\"')
     parser.add_argument('-batch_size', '-b', type=int, default=100, help='Batch size to process images with. default is: 100')
     parser.add_argument('-scale', '-s', type=float, default=1.0, help='Image scale. default is: 1.0')
@@ -27,25 +28,17 @@ def parse_arguments():
     parser.add_argument('-chunk_time_threshold', '-ct', type=int, default=60, help='Number of seconds to save checkpoint files after. default is: 60')
     return parser.parse_args()
 
-def arguman_check():
+def arguman_check(args):
     valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
     valid_options = ["merge", "dontmerge", ""]
-    # add '-merge' for batch merging, '-dontmerge' for early terminating
 
-    # SSIM: slow, good at big images
-    # imagehash: mid speed, good at small images
-    # minhash: fastest, mid solution for both cases
-    # ORB: slow and bad
-    # TM: slow and bad
-
-    # if method not in valid_methods:
-    #     print_verbose("e", "invalid method type")
-    # if option not in valid_options:
-    #     print_verbose("e", "invalid option type")
-
-    pass
+    if args.method not in valid_methods:
+        print_verbose("e", "invalid method type")
+    if args.option not in valid_options:
+        print_verbose("e", "invalid option type")
 
 args = parse_arguments()
+arguman_check(args)
 images_folder_path = args.path
 method = args.method
 option = args.option
@@ -55,7 +48,6 @@ threshold = args.threshold
 overwrite = args.overwrite
 num_of_threads = args.num_of_threads
 chunk_time_threshold = args.chunk_time_threshold
-arguman_check()
 
 # lets user interactively select threshold for some methods
 def select_threshold(method, folder_path, num_of_files=1000):
@@ -74,24 +66,32 @@ def select_threshold(method, folder_path, num_of_files=1000):
     all_image_files = filter(lambda x: os.path.isfile(os.path.join(folder_path, x)), os.listdir(folder_path))
     selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(folder_path, x)).st_size)[:num_of_files]
 
-    if method == "SSIM":
-        threshold = float(input("threshold for similarity and clustering: ")) 
-        return
-    
+    image_feature_dict = get_images_dict(method, selected_image_files, folder_path, scale)
     print_verbose("v", "process for interactive threshold selection is started.")
-    if method == "minhash":
-        img_minhash_dict = get_images_dict(method, selected_image_files, folder_path, scale)
-        minhashs_combs = list(combinations(list(img_minhash_dict.values()), 2))
+    if method == "SSIM":
+        def get_structural_similarity(image_pair):
+            """gets given image pairs structural similarity score, this method is writed to suit to thread_this() call
+
+            Args:
+                image_pair (tuple): name of pair files
+
+            Returns:
+                float: structural similarity
+            """
+            return structural_similarity(image_pair[0], image_pair[1], full=True)[0]
+        
+        image_combs = list(combinations(list(image_feature_dict.values()), 2))
+        sim_list = thread_this(get_structural_similarity, image_combs)
+
+    elif method == "minhash":
+        minhashs_combs = list(combinations(list(image_feature_dict.values()), 2))
         sim_list = [mh1.jaccard(mh2) for (mh1, mh2) in tqdm(minhashs_combs, desc="Calculating similarity", leave=False)]
 
     elif method == "imagehash":
-        files = get_images_dict(method, selected_image_files, folder_path, scale)
-        file_combs = list(combinations(list(files.keys()), 2))
-        sim_list = [image_hash_similarity(files[f1], files[f2]) for (f1, f2) in tqdm(file_combs, desc="Calculating similarity", leave=False)]
+        file_combs = list(combinations(list(image_feature_dict.keys()), 2))
+        sim_list = [image_hash_similarity(image_feature_dict[f1], image_feature_dict[f2]) for (f1, f2) in tqdm(file_combs, desc="Calculating similarity", leave=False)]
     
     elif method == "ORB":
-        files = get_images_dict(method, selected_image_files, folder_path, scale)
-
         bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
         def orb_calculate_similarity(image_descriptors_and_bf):
             """calculates similarity over 2 images orb features descriptors
@@ -108,8 +108,8 @@ def select_threshold(method, folder_path, num_of_files=1000):
 
             return similarity
 
-        file_combs = list(combinations(list(files.keys()), 2))
-        param_list = [[files[f1], files[f2], bf] for (f1, f2) in file_combs]
+        file_combs = list(combinations(list(image_feature_dict.keys()), 2))
+        param_list = [[image_feature_dict[f1], image_feature_dict[f2], bf] for (f1, f2) in file_combs]
         sim_list = thread_this(orb_calculate_similarity, param_list)
 
     elif method == "TM":
@@ -123,11 +123,9 @@ def select_threshold(method, folder_path, num_of_files=1000):
                 float: template matching similarity
             """
 
-            return np.min(cv2.matchTemplate(image_pair[0], image_pair[1], cv2.TM_SQDIFF_NORMED))
-
-        images = get_images_dict(method, selected_image_files, folder_path, scale)
-        image_combs = list(combinations(list(images.values()), 2))
-
+            return np.min(cv2.matchTemplate(image_pair[0], image_pair[1], cv2.TM_SQDIFF_NORMED))        
+        
+        image_combs = list(combinations(list(image_feature_dict.values()), 2))
         sim_list = thread_this(get_tempate_matching_similarity, image_combs)
 
     def on_hover(sel, lenght = len(selected_image_files)):
@@ -175,7 +173,8 @@ if option != "merge":
         else:
             print_verbose("f", "folder not overwrited, nothing to do")
 
-select_threshold(method, images_folder_path, min(batch_size, 1000))
+# interactive threshold selection is disabled because of "FigureCanvasAgg is non-interactive, and thus cannot be shown" error"
+# select_threshold(method, images_folder_path, min(batch_size, 1000))
 similarity_threshold = clustering_threshold = threshold
 
 lock = Lock()
