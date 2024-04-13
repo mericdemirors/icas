@@ -148,41 +148,13 @@ def calculate_similarity(
                     print_verbose(batch_idx, "remaining combinations to check: " + str(int(bools.sum() / 2)))
             lock.release()
 
-    if (now - last_checkpoint_time[0]).total_seconds() > 300:
+    if (now - last_checkpoint_time[0]).total_seconds() > chunk_time_threshold:
         lock.acquire()
         last_checkpoint_time[0] = now
         with open(os.path.join(destination_container_folder_base, "image_similarities_batch_" + str(batch_idx) + "_checkpoint.json"), "w") as json_file:
             json.dump({str(k): v for (k, v) in list(image_similarities.items())}, json_file, indent="\n")
         print_verbose(batch_idx, "image_similarities saved(checkpoint)")
         lock.release()
-
-# gets method and option
-def get_method_and_option():
-    """ SSIM: slow, good at big images
-        imagehash: mid speed, good at small images
-        minhash: fastest, mid solution for both cases
-        ORB: slow and bad
-        TM: slow and bad
-
-    Returns:
-        tuple: method and option
-    """
-    run_type = str(input("method to calculate similarity(SSIM(slow), imagehash(mid), minhash(fast), ORB(slow), TM(slow)[add '-merge' for batch merging, '-dontmerge' for early terminating]): ")).strip()
-    method = option = ""
-    valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
-    valid_options = ["merge", "dontmerge", ""]
-    if "-" in run_type:
-        method = run_type.split("-")[0]
-        option = run_type.split("-")[-1]
-    else:
-        method = run_type
-
-    if method not in valid_methods:
-        print_verbose("e", "invalid method type")
-    if option not in valid_options:
-        print_verbose("e", "invalid option type")
-
-    return method, option
 
 # saves similarities into a json
 def save_checkpoint(batch_idx, path_to_write, image_similarities):

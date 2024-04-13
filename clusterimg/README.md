@@ -17,3 +17,4 @@ TO-ADD
 TO-TIDY
 
 TO-FIX
+- fix interactive threshold selection to be suitable for all cases

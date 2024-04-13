@@ -1,9 +1,9 @@
 import os
 import shutil
 import datetime
+import argparse
 
 import cv2
-import imagehash
 import numpy as np
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
@@ -12,9 +12,51 @@ import mplcursors
 from itertools import combinations
 from threading import Lock
 
-from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, image_hash_similarity, save_checkpoint, write_clusters, get_images_dict, get_templates_dict, get_method_and_option
+from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, image_hash_similarity, save_checkpoint, write_clusters, get_images_dict, get_templates_dict
 
-threshold , selected_image_files = None, None
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Parameters')
+    parser.add_argument('-path', '-p', type=str, default="", help='Path to image folder. default is: \"\"')
+    parser.add_argument('-method', '-m', type=str, default="", help='Method to use. default is: \"\"')
+    parser.add_argument('-option', '-o', type=str, default="", help='Option of process. default is: \"\"')
+    parser.add_argument('-batch_size', '-b', type=int, default=100, help='Batch size to process images with. default is: 100')
+    parser.add_argument('-scale', '-s', type=float, default=1.0, help='Image scale. default is: 1.0')
+    parser.add_argument('-threshold', '-t', type=float, default=0.8, help='Threshold to count 2 images as similar. default is: 0.8')
+    parser.add_argument('-overwrite', '-ow', type=str, default="N", help='Whether to overwrite old clustered folder or not. default is: N')
+    parser.add_argument('-num_of_threads', '-n', type=int, default=4, help='Number of threads to share job pool. default is: 4')
+    parser.add_argument('-chunk_time_threshold', '-ct', type=int, default=60, help='Number of seconds to save checkpoint files after. default is: 60')
+    return parser.parse_args()
+
+def arguman_check():
+    valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
+    valid_options = ["merge", "dontmerge", ""]
+    # add '-merge' for batch merging, '-dontmerge' for early terminating
+
+    # SSIM: slow, good at big images
+    # imagehash: mid speed, good at small images
+    # minhash: fastest, mid solution for both cases
+    # ORB: slow and bad
+    # TM: slow and bad
+
+    # if method not in valid_methods:
+    #     print_verbose("e", "invalid method type")
+    # if option not in valid_options:
+    #     print_verbose("e", "invalid option type")
+
+    pass
+
+args = parse_arguments()
+images_folder_path = args.path
+method = args.method
+option = args.option
+batch_size = args.batch_size
+scale = args.scale
+threshold = args.threshold
+overwrite = args.overwrite
+num_of_threads = args.num_of_threads
+chunk_time_threshold = args.chunk_time_threshold
+arguman_check()
+
 # lets user interactively select threshold for some methods
 def select_threshold(method, folder_path, num_of_files=1000):
     """Lets user interactively select threshold
@@ -48,7 +90,6 @@ def select_threshold(method, folder_path, num_of_files=1000):
         sim_list = [image_hash_similarity(files[f1], files[f2]) for (f1, f2) in tqdm(file_combs, desc="Calculating similarity", leave=False)]
     
     elif method == "ORB":
-        selected_image_files = selected_image_files[:500]
         files = get_images_dict(method, selected_image_files, folder_path, scale)
 
         bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -116,10 +157,7 @@ def select_threshold(method, folder_path, num_of_files=1000):
     plt.gcf().canvas.mpl_connect('button_press_event', on_click)
     plt.show() 
 
-method, option = get_method_and_option()
-
 # setting folders
-images_folder_path = input("path: ")
 if option == "merge":
     # folder must be end with "_clustered"
     images_folder_path = images_folder_path[:-10]
@@ -131,20 +169,16 @@ if option != "merge":
     try:
         os.makedirs(destination_container_folder)
     except FileExistsError as e:
-        overwrite = str(input(str(e) + " Do you want to overwrite the folder[Y/n]: ")).strip()
         if overwrite in ["Y", "y", ""]:
             shutil.rmtree(destination_container_folder)
             os.makedirs(destination_container_folder)
         else:
             print_verbose("f", "folder not overwrited, nothing to do")
 
-scale = float(input("image scale: "))
-select_threshold(method, images_folder_path)
+select_threshold(method, images_folder_path, min(batch_size, 1000))
 similarity_threshold = clustering_threshold = threshold
 
 lock = Lock()
-num_of_threads = 1024
-chunk_time_threshold = 60
 
 # calculates similarities between given images
 def calculate_batch_similarity(batch_idx, image_files, method):
@@ -388,7 +422,6 @@ if __name__ == "__main__":
         all_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(images_folder_path, x)).st_size)
 
         # process the images batch by batch
-        batch_size = int(input("Batch Size:"))
         for batch_idx, start in enumerate(range(0, len(all_image_files), batch_size)):
             image_files = all_image_files[start : start + batch_size]
             process_images(batch_idx, image_files, destination_container_folder)
