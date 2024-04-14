@@ -11,7 +11,6 @@ TO-ADD
 - parametre vererek main dosyasından çağrılabilir fonksiyon haline getir
 - terminalden çalıştırılabilir hale getir
 - seviye seviye azalan verbose
-- user selection of copying or moving the images
 
 TO-TIDY
 

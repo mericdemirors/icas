@@ -26,16 +26,20 @@ def parse_arguments():
     parser.add_argument('-overwrite', '-ow', type=str, default="N", help='Whether to overwrite old clustered folder or not. default is: N')
     parser.add_argument('-num_of_threads', '-n', type=int, default=4, help='Number of threads to share job pool. default is: 4')
     parser.add_argument('-chunk_time_threshold', '-ct', type=int, default=60, help='Number of seconds to save checkpoint files after. default is: 60')
+    parser.add_argument('-transfer', '-tr', type=str, default="copy", help='How to transfer image files. default is: copy')
     return parser.parse_args()
 
 def arguman_check(args):
     valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
     valid_options = ["merge", "dontmerge", ""]
+    valid_transfer = ["copy", "move"]
 
     if args.method not in valid_methods:
         print_verbose("e", "invalid method type")
     if args.option not in valid_options:
         print_verbose("e", "invalid option type")
+    if args.transfer not in valid_transfer:
+        print_verbose("e", "invalid transfer type")
 
 args = parse_arguments()
 arguman_check(args)
@@ -48,6 +52,7 @@ threshold = args.threshold
 overwrite = args.overwrite
 num_of_threads = args.num_of_threads
 chunk_time_threshold = args.chunk_time_threshold
+transfer = args.transfer
 
 # lets user interactively select threshold for some methods
 def select_threshold(method, folder_path, num_of_files=1000):
@@ -406,7 +411,7 @@ def process_images(batch_idx, image_files, destination_container_folder):
     clusters, clustered_images = cluster(sorted(image_similarities.items(), key=lambda x: x[1], reverse=True), clustering_threshold)
     outliers = list(set(image_files).difference(set(clustered_images)))
     print_verbose(batch_idx, str(len(clusters)) + " cluster found")
-    write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers)
+    write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer)
     save_checkpoint(batch_idx, destination_container_folder, image_similarities)
     print("-"*70)
 
@@ -462,7 +467,10 @@ if __name__ == "__main__":
         os.mkdir(result_cluster_folder_path)
         for folder in result_folder:
             for file in os.listdir(folder):
-                shutil.copy(os.path.join(folder, file), os.path.join(result_cluster_folder_path, file))
+                if transfer == "copy":
+                    shutil.copy(os.path.join(folder, file), os.path.join(result_cluster_folder_path, file))
+                if transfer == "move":
+                    shutil.move(os.path.join(folder, file), os.path.join(result_cluster_folder_path, file))
 
     # removing unnecessary files and folders after merging results
     for folder in os.listdir(destination_container_folder):

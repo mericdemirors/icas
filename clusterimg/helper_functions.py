@@ -187,7 +187,7 @@ def load_checkpoint(path):
     return loaded
 
 # writes clusters into destination
-def write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers):
+def write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer):
     """writes image clusters to a folder
 
     Args:
@@ -196,18 +196,27 @@ def write_clusters(clusters, batch_idx, images_folder_path, destination_containe
         images_folder_path(str): folder path of images
         destination_container_folder (str): path to folder to write into
         outliers (list): list of outlier images
+        transfer (str): transfer type of images
     """
     # Loop through each cluster, create a folder and copy images in that cluster to folder
     for i, image_list in enumerate([c for c in clusters if len(c) > 1]):
         destination_folder_path = os.path.join(destination_container_folder, "batch_" + str(batch_idx), "cluster_" + str(i))
 
         os.makedirs(destination_folder_path)
-        [shutil.copy(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in image_list]
+        if transfer == "copy":
+            [shutil.copy(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in image_list]
+        if transfer == "move":
+            [shutil.move(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in image_list]
+
 
     # write all non-clustered image into outliers folder
     destination_folder_path = os.path.join(destination_container_folder, "batch_" + str(batch_idx), "outliers")
     os.makedirs(destination_folder_path)
-    [shutil.copy(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
+    if transfer == "copy":
+        [shutil.copy(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
+    if transfer == "move":
+        [shutil.move(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
+
 
 # prints verboses in a format
 def print_verbose(verbose_type, message):
