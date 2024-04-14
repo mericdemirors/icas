@@ -27,22 +27,28 @@ def parse_arguments():
     parser.add_argument('-num_of_threads', '-n', type=int, default=4, help='Number of threads to share job pool. default is: 4')
     parser.add_argument('-chunk_time_threshold', '-ct', type=int, default=60, help='Number of seconds to save checkpoint files after. default is: 60')
     parser.add_argument('-transfer', '-tr', type=str, default="copy", help='How to transfer image files. default is: copy')
+    parser.add_argument('-verbose', '-v', type=int, default=0, help='Verbose level. default is: 0')
     return parser.parse_args()
 
-def arguman_check(args):
+def arguman_check(args, verbose=0):
+    """checks given argumans validity
+
+    Args:
+        args (argparsa argumans): arguman parser object
+        verbose (int, optional): verbose level. Defaults to 0.
+    """
     valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
     valid_options = ["merge", "dontmerge", ""]
     valid_transfer = ["copy", "move"]
 
     if args.method not in valid_methods:
-        print_verbose("e", "invalid method type")
+        print_verbose("e", "invalid method type", verbose)
     if args.option not in valid_options:
-        print_verbose("e", "invalid option type")
+        print_verbose("e", "invalid option type", verbose)
     if args.transfer not in valid_transfer:
-        print_verbose("e", "invalid transfer type")
+        print_verbose("e", "invalid transfer type", verbose)
 
 args = parse_arguments()
-arguman_check(args)
 images_folder_path = args.path
 method = args.method
 option = args.option
@@ -53,15 +59,18 @@ overwrite = args.overwrite
 num_of_threads = args.num_of_threads
 chunk_time_threshold = args.chunk_time_threshold
 transfer = args.transfer
+verbose = args.verbose
+arguman_check(args, verbose=verbose-1)
 
 # lets user interactively select threshold for some methods
-def select_threshold(method, folder_path, num_of_files=1000):
+def select_threshold(method, folder_path, num_of_files=1000, verbose=0):
     """Lets user interactively select threshold
 
     Args:
         method (str): type of similarity calculation method
         folder_path (str): path to image folder
         num_of_files (int, optional): how much image should be processed for interactive selection. Defaults to 1000.
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         None: if method is SSIM(structural_similarity) no interactive selection can be made(takes to much time) so return is used for terminating the function
@@ -71,8 +80,8 @@ def select_threshold(method, folder_path, num_of_files=1000):
     all_image_files = filter(lambda x: os.path.isfile(os.path.join(folder_path, x)), os.listdir(folder_path))
     selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(folder_path, x)).st_size)[:num_of_files]
 
-    image_feature_dict = get_images_dict(method, selected_image_files, folder_path, scale)
-    print_verbose("v", "process for interactive threshold selection is started.")
+    image_feature_dict = get_images_dict(method, selected_image_files, folder_path, scale, verbose=verbose-1)
+    print_verbose("v", "process for interactive threshold selection is started.", verbose)
     if method == "SSIM":
         def get_structural_similarity(image_pair):
             """gets given image pairs structural similarity score, this method is writed to suit to thread_this() call
@@ -94,7 +103,7 @@ def select_threshold(method, folder_path, num_of_files=1000):
 
     elif method == "imagehash":
         file_combs = list(combinations(list(image_feature_dict.keys()), 2))
-        sim_list = [image_hash_similarity(image_feature_dict[f1], image_feature_dict[f2]) for (f1, f2) in tqdm(file_combs, desc="Calculating similarity", leave=False)]
+        sim_list = [image_hash_similarity(image_feature_dict[f1], image_feature_dict[f2], verbose=verbose-1) for (f1, f2) in tqdm(file_combs, desc="Calculating similarity", leave=False)]
     
     elif method == "ORB":
         bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -176,7 +185,7 @@ if option != "merge":
             shutil.rmtree(destination_container_folder)
             os.makedirs(destination_container_folder)
         else:
-            print_verbose("f", "folder not overwrited, nothing to do")
+            print_verbose("f", "folder not overwrited, nothing to do", verbose)
 
 # interactive threshold selection is disabled because of "FigureCanvasAgg is non-interactive, and thus cannot be shown" error"
 # select_threshold(method, images_folder_path, min(batch_size, 1000))
@@ -185,13 +194,14 @@ similarity_threshold = clustering_threshold = threshold
 lock = Lock()
 
 # calculates similarities between given images
-def calculate_batch_similarity(batch_idx, image_files, method):
+def calculate_batch_similarity(batch_idx, image_files, method, verbose=0):
     """calculates similarity inside a batch
 
     Args:
         batch_idx (int): index of batch
         image_files (list): list of files
-
+        verbose (int, optional): verbose level. Defaults to 0.
+        
     Returns:
         dictionary: dictionary of image pairs similarity in that batch
     """
@@ -199,11 +209,11 @@ def calculate_batch_similarity(batch_idx, image_files, method):
         return {}
 
     image_similarities = {}
-    images = get_images_dict(method, image_files, images_folder_path, scale)
+    images = get_images_dict(method, image_files, images_folder_path, scale, verbose=verbose-1)
 
     comb = list(combinations(image_files, 2))  # all pair combinations of images
     bools = np.ones((len(image_files), len(image_files)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
-    print_verbose(batch_idx, "processing total of " + str(len(comb)) + " pair combinations")
+    print_verbose(batch_idx, "processing total of " + str(len(comb)) + " pair combinations", verbose)
 
     # divide the computations to chunks
     if num_of_threads > len(comb):
@@ -245,24 +255,26 @@ def calculate_batch_similarity(batch_idx, image_files, method):
                 chunk_time_threshold,
                 destination_container_folder,
                 method,
+                verbose=verbose-1
             )
             for pair in chunk
         ]
 
     # Threading (WILL CHANGE, LOTS OF SMALL COMPUTATIONS ARE NEEDED TO BE THREADED)
-    results = thread_this(calculate_similarity_for_chunk, chunks, num_of_threads)
+    results = thread_this(calculate_similarity_for_chunk, chunks)
     flat_results = [result for sublist in results for result in sublist]
 
     return image_similarities
 
 # calculates similarities between given templates
-def calculate_template_similarities(batch_idx, template_cluster_dict, template_files):
+def calculate_template_similarities(batch_idx, template_cluster_dict, template_files, verbose=0):
     """calculates similarity of templates
 
     Args:
         batch_idx (int): index of batch
         template_cluster_dict (dictionary): dictionary of template files and path of clusters they represent
         template_files (list): list of files
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         dictionary: dictionary of image pairs similarity in that batch
@@ -271,7 +283,7 @@ def calculate_template_similarities(batch_idx, template_cluster_dict, template_f
         return {}
 
     template_similarities = {}
-    templates = get_templates_dict(method, template_files, template_cluster_dict, scale)
+    templates = get_templates_dict(method, template_files, template_cluster_dict, scale, verbose=verbose-1)
 
     list_of_batch_templates = []
     for unique_path in set([os.path.split(x)[0] for x in template_cluster_dict.values()]):
@@ -287,11 +299,11 @@ def calculate_template_similarities(batch_idx, template_cluster_dict, template_f
     bools = np.ones((len(template_files), len(template_files)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
 
     if len(comb) < 1:
-        print_verbose("f", "no template pair combination pair found")
+        print_verbose("f", "no template pair combination pair found", verbose)
     if option != "merge":
-        print_verbose("r", "processing total of " + str(len(comb)) + " pair combinations")
+        print_verbose("r", "processing total of " + str(len(comb)) + " pair combinations", verbose)
     if option == "merge":
-        print_verbose("m", "processing total of " + str(len(comb)) + " pair combinations")
+        print_verbose("m", "processing total of " + str(len(comb)) + " pair combinations", verbose)
 
     # divide the computations to chunks
     if num_of_threads > len(comb):
@@ -332,25 +344,27 @@ def calculate_template_similarities(batch_idx, template_cluster_dict, template_f
                 batch_idx,
                 chunk_time_threshold,
                 destination_container_folder,
-                method
+                method,
+                verbose=verbose-1
             )
             for pair in chunk
         ]
 
     # Threading (WILL CHANGE, LOTS OF SMALL COMPUTATIONS ARE NEEDED TO BE THREADED)
-    results = thread_this(calculate_similarity_for_chunk, chunks, num_of_threads)
+    results = thread_this(calculate_similarity_for_chunk, chunks)
     flat_results = [result for sublist in results for result in sublist]
 
     return template_similarities
 
 # function to merge batch folders clusters 
-def merge_clusters_by_templates(batch_folder_paths, batch_idx, clustering_threshold):
+def merge_clusters_by_templates(batch_folder_paths, batch_idx, clustering_threshold, verbose=0):
     """merges individual clusters in all batch folders into one result folder
 
     Args:
         batch_folder_paths (list): list of batch folders path
         batch_idx (int): index of batch
         clustering_threshold (float): decides if 2 image is inside the same cluster of not
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         list: list of merged clusters
@@ -365,15 +379,15 @@ def merge_clusters_by_templates(batch_folder_paths, batch_idx, clustering_thresh
     all_template_files = sorted(list(template_cluster_dict.keys()))
 
     if option != "merge":
-        print_verbose("r", str(len(template_cluster_dict)) + " template found")
+        print_verbose("r", str(len(template_cluster_dict)) + " template found", verbose)
     if option == "merge":
-        print_verbose("m", str(len(template_cluster_dict)) + " template found")
+        print_verbose("m", str(len(template_cluster_dict)) + " template found", verbose)
 
     # compute all template similarities in one pass
-    template_similarities = calculate_template_similarities(batch_idx, template_cluster_dict, all_template_files)
+    template_similarities = calculate_template_similarities(batch_idx, template_cluster_dict, all_template_files, verbose=verbose-1)
 
     # clustering templates according to similarities
-    clusters, clustered_templates = cluster(sorted(template_similarities.items(), key=lambda x: x[1], reverse=True), clustering_threshold)
+    clusters, clustered_templates = cluster(sorted(template_similarities.items(), key=lambda x: x[1], reverse=True), clustering_threshold, verbose=verbose-1)
 
     # setting the folders for merging
     all_cluster_folder_paths = []
@@ -398,21 +412,22 @@ def merge_clusters_by_templates(batch_folder_paths, batch_idx, clustering_thresh
     return result_clusters
 
 # function to pack all things above into one call
-def process_images(batch_idx, image_files, destination_container_folder):
+def process_images(batch_idx, image_files, destination_container_folder, verbose=0):
     """function to do the all processing
 
     Args:
         batch_idx (int): index of batch
         image_files (list): list of image files
         destination_container_folder (str): path to write files into
+        verbose (int, optional): verbose level. Defaults to 0.
     """
-    image_similarities = calculate_batch_similarity(batch_idx, image_files, method)
+    image_similarities = calculate_batch_similarity(batch_idx, image_files, method, verbose=verbose-1)
 
-    clusters, clustered_images = cluster(sorted(image_similarities.items(), key=lambda x: x[1], reverse=True), clustering_threshold)
+    clusters, clustered_images = cluster(sorted(image_similarities.items(), key=lambda x: x[1], reverse=True), clustering_threshold, verbose=verbose-1)
     outliers = list(set(image_files).difference(set(clustered_images)))
-    print_verbose(batch_idx, str(len(clusters)) + " cluster found")
-    write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer)
-    save_checkpoint(batch_idx, destination_container_folder, image_similarities)
+    print_verbose(batch_idx, str(len(clusters)) + " cluster found", verbose)
+    write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer, verbose=verbose-1)
+    save_checkpoint(batch_idx, destination_container_folder, image_similarities, verbose=verbose-1)
     print("-"*70)
 
 
@@ -428,7 +443,7 @@ if __name__ == "__main__":
         # process the images batch by batch
         for batch_idx, start in enumerate(range(0, len(all_image_files), batch_size)):
             image_files = all_image_files[start : start + batch_size]
-            process_images(batch_idx, image_files, destination_container_folder)
+            process_images(batch_idx, image_files, destination_container_folder, verbose=verbose-1)
 
         # if images are done in one batch terminate the code
         if batch_size >= len(all_image_files):
@@ -437,10 +452,10 @@ if __name__ == "__main__":
                 os.rename(os.path.join(destination_container_folder, file),
                 os.path.join(destination_container_folder, new_file_name))
             os.remove(os.path.join(destination_container_folder, "image_similarities_result.json"))
-            print_verbose("f", "no merge needed to single batch")
+            print_verbose("f", "no merge needed to single batch", verbose)
         
     if option == "dontmerge":
-        print_verbose("f", "terminating because of no merge request")
+        print_verbose("f", "terminating because of no merge request", verbose)
 
     # gets template(first) image from all clusters of all batches
     batch_folder_paths = sorted([os.path.join(destination_container_folder, f)
@@ -448,12 +463,12 @@ if __name__ == "__main__":
                                 if os.path.isdir(os.path.join(destination_container_folder, f))])
 
     # process templates
-    result_clusters = merge_clusters_by_templates(batch_folder_paths, "r", clustering_threshold)
+    result_clusters = merge_clusters_by_templates(batch_folder_paths, "r", clustering_threshold, verbose=verbose-1)
 
     if option != "merge":
-        print_verbose("r", str(len(result_clusters) - 1) + " cluster found at result")
+        print_verbose("r", str(len(result_clusters) - 1) + " cluster found at result", verbose)
     if option == "merge":
-        print_verbose("m", str(len(result_clusters) - 1) + " cluster found at result")
+        print_verbose("m", str(len(result_clusters) - 1) + " cluster found at result", verbose)
 
     
     # creating result output folder and copying images

@@ -16,13 +16,14 @@ from skimage.metrics import structural_similarity
 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
 # Clustering images
-def cluster(sorted_similarities, clustering_threshold):
+def cluster(sorted_similarities, clustering_threshold, verbose=0):
     """clusters list of similarities of item pairs, if and X and Y image are more similar then clustering threshold, they are putted into same cluster, if any X and Y image has an image chain X-A-B-...-M-Y that has consecutive pair similarities bigger than threshold, they are putted into same cluster
 
     Args:
         sorted_similarities (list): list of item pairs and their similarities in form [((X, Y), similarity_point), ...]
         clustering_threshold (float): decides if X and Y are close or not
-
+        verbose (int, optional): verbose level. Defaults to 0.
+        
     Returns:
         tuple: clusters -> list of clusters, added_img -> list of items that are clustered
     """
@@ -83,7 +84,7 @@ def calculate_similarity(
     chunk_time_threshold,
     destination_container_folder_base,
     method,
-    verbose=1
+    verbose=0
 ):
     """calculates 2 images similarity based on structural_similarity, this function is runned by threads. If any X and Y are found to be similar, any pair that has Y in it is discarded from calculation queue because if X and Y are similar and Y and Z are similar, then X and Z should be similar too.
 
@@ -127,10 +128,10 @@ def calculate_similarity(
             elif method == "TM":
                 sim = np.float64(np.min(cv2.matchTemplate(images[img1_file], images[img2_file], cv2.TM_SQDIFF_NORMED)))
             else:
-                print_verbose("e", "Error while similarity calculation(setting pair similarity to -np.inf): " + str(e))
+                print_verbose("e", "Error while similarity calculation(setting pair similarity to -np.inf): " + str(e), verbose)
                 sim = -np.inf
         except Exception as e:
-            print_verbose("e", "Error while similarity calculation(setting pair similarity to -np.inf): " + str(e))
+            print_verbose("e", "Error while similarity calculation(setting pair similarity to -np.inf): " + str(e), verbose)
             sim = -np.inf
 
         if sim > similarity_threshold:
@@ -145,7 +146,7 @@ def calculate_similarity(
             if verbose:
                 if (now - last_verbose_time[0]).total_seconds() > 60:
                     last_verbose_time[0] = now
-                    print_verbose(batch_idx, "remaining combinations to check: " + str(int(bools.sum() / 2)))
+                    print_verbose(batch_idx, "remaining combinations to check: " + str(int(bools.sum() / 2)), verbose)
             lock.release()
 
     if (now - last_checkpoint_time[0]).total_seconds() > chunk_time_threshold:
@@ -153,30 +154,32 @@ def calculate_similarity(
         last_checkpoint_time[0] = now
         with open(os.path.join(destination_container_folder_base, "image_similarities_batch_" + str(batch_idx) + "_checkpoint.json"), "w") as json_file:
             json.dump({str(k): v for (k, v) in list(image_similarities.items())}, json_file, indent="\n")
-        print_verbose(batch_idx, "image_similarities saved(checkpoint)")
+        print_verbose(batch_idx, "image_similarities saved(checkpoint)", verbose)
         lock.release()
 
 # saves similarities into a json
-def save_checkpoint(batch_idx, path_to_write, image_similarities):
+def save_checkpoint(batch_idx, path_to_write, image_similarities, verbose=0):
     """saves checkpoint files of image similarities
 
     Args:
         batch_idx (int): index of batch
         path_to_write (str): path to write checkpoint
         image_similarities (dictionary): dictionary of image pairs similarity in that batch
+        verbose (int, optional): verbose level. Defaults to 0.
     """
     # last checkpoint at the end of process
     dict_to_save = {str(k): v for (k, v) in list(image_similarities.items())}
     with open(os.path.join(path_to_write, "image_similarities_batch_" + str(batch_idx) + ".json"), "w") as json_file:
         json.dump(dict_to_save, json_file, indent="\n")
-    print_verbose(batch_idx, "image_similarities saved")
+    print_verbose(batch_idx, "image_similarities saved", verbose)
 
 # How to read checkpoint dictionary
-def load_checkpoint(path):
+def load_checkpoint(path, verbose=0):
     """Loads a saved checkpoint file
 
     Args:
         path (string): path of checkpoint file
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         dictionary: loaded save
@@ -187,7 +190,7 @@ def load_checkpoint(path):
     return loaded
 
 # writes clusters into destination
-def write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer):
+def write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer, verbose=0):
     """writes image clusters to a folder
 
     Args:
@@ -197,6 +200,7 @@ def write_clusters(clusters, batch_idx, images_folder_path, destination_containe
         destination_container_folder (str): path to folder to write into
         outliers (list): list of outlier images
         transfer (str): transfer type of images
+        verbose (int, optional): verbose level. Defaults to 0.
     """
     # Loop through each cluster, create a folder and copy images in that cluster to folder
     for i, image_list in enumerate([c for c in clusters if len(c) > 1]):
@@ -219,12 +223,13 @@ def write_clusters(clusters, batch_idx, images_folder_path, destination_containe
 
 
 # prints verboses in a format
-def print_verbose(verbose_type, message):
+def print_verbose(verbose_type, message, verbose=0):
     """Prints verbose messages
 
     Args:
         verbose_type (int or str): int for indicating batch_idx or string for result/error
         message (str): message to print
+        verbose (int, optional): verbose level. Defaults to 0.
     """
     output = "[" + time.strftime("%H:%M:%S") + "] - " 
     if isinstance(verbose_type, int):
@@ -247,10 +252,11 @@ def print_verbose(verbose_type, message):
         print("wrong output verbose type")
         exit(0)
 
-    print(output)
+    if verbose > 0:
+        print(output)
 
 # threads a given function with given parameters to given number of threads
-def thread_this(func, params, num_of_threads=1024):
+def thread_this(func, params):
     """Treads given function to speed it up
 
     Args:
@@ -261,12 +267,13 @@ def thread_this(func, params, num_of_threads=1024):
     Returns:
         list: list of parallel execution results
     """
+    from clustering import num_of_threads
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_of_threads) as executor:
         results = list(executor.map(func, params))
     return results
 
 # returns most distinct n corners coordinates of image
-def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=100):
+def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=100, verbose=0):
     """Extracts most distinct top_n_corners location as an array
 
     Args:
@@ -275,7 +282,8 @@ def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=
         ksize (int, optional): cv2.cornerHarris parameter. Defaults to 3.
         k (float, optional): cv2.cornerHarris parameter. Defaults to 0.04.
         top_n_corners (int, optional): number of corners to extract from image. Defaults to 100.
-
+        verbose (int, optional): verbose level. Defaults to 0.
+        
     Returns:
         list: list of corner coordinates
     """
@@ -288,12 +296,13 @@ def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=
     return sorted(indices_of_largest_values)
 
 # calculates similarity between 2 image perceptual hashs
-def image_hash_similarity(imgph1, imgph2):
+def image_hash_similarity(imgph1, imgph2, verbose=0):
     """calculates similarity between 2 image perceptual hashs
 
     Args:
         imgph1 (<class 'imagehash.ImageHash'>): hash of first image
         imgph2 (<class 'imagehash.ImageHash'>): hash of second image
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         float: similarity metric between 2 hash
@@ -301,10 +310,10 @@ def image_hash_similarity(imgph1, imgph2):
     try:
         return 1 - (imgph1 - imgph2) / len(imgph1.hash)  # Normalize the score to be between 0 and 1
     except Exception as e:
-        print_verbose("e", "Error while calculating image hash similarity: " + str(e))
+        print_verbose("e", "Error while calculating image hash similarity: " + str(e), verbose)
     
 # returns images and related features dict
-def get_images_dict(method, image_files, images_folder_path, scale):
+def get_images_dict(method, image_files, images_folder_path, scale, verbose=0):
     """returns images and related features dict
 
     Args:
@@ -312,6 +321,7 @@ def get_images_dict(method, image_files, images_folder_path, scale):
         image_files (list): list of image file names
         images_folder_path (str): path of image folder
         scale (float): image scale
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         dictionary: dictionary of images and related features
@@ -331,7 +341,7 @@ def get_images_dict(method, image_files, images_folder_path, scale):
             Returns:
                 list: list of corner features of given image
             """
-            return get_corner_features(cv2.resize(cv2.imread(os.path.join(images_folder_path, image_file), cv2.IMREAD_GRAYSCALE), (0, 0), fx=scale, fy=scale))
+            return get_corner_features(cv2.resize(cv2.imread(os.path.join(images_folder_path, image_file), cv2.IMREAD_GRAYSCALE), (0, 0), fx=scale, fy=scale), verbose=verbose-1)
 
         results = thread_this(get_image_corners, image_files)
         img_corners_dict = {image_file:results[e] for e, image_file in enumerate(image_files)}
@@ -383,7 +393,7 @@ def get_images_dict(method, image_files, images_folder_path, scale):
     return images
 
 # returns templates and related features dict
-def get_templates_dict(method, template_files, template_cluster_dict, scale):
+def get_templates_dict(method, template_files, template_cluster_dict, scale, verbose=0):
     """returns templates and related features dict
 
     Args:
@@ -391,7 +401,8 @@ def get_templates_dict(method, template_files, template_cluster_dict, scale):
         template_files (list): list of template file names
         template_folder_path (str): path of template folder
         scale (float): template scale
-
+        verbose (int, optional): verbose level. Defaults to 0.
+        
     Returns:
         dictionary: dictionary of templates and related features
     """
@@ -402,7 +413,7 @@ def get_templates_dict(method, template_files, template_cluster_dict, scale):
         templates = {template_file:cv2.resize(cv2.imread(os.path.join(template_cluster_dict[template_file], template_file), cv2.IMREAD_GRAYSCALE), (0, 0), fx=scale, fy=scale) for template_file in tqdm(template_files, desc="Reading templates, may take a while", leave=False)}
             
     elif method == "minhash":
-        template_corners_dict = {template_file:get_corner_features(cv2.resize(cv2.imread(os.path.join(template_cluster_dict[template_file], template_file), cv2.IMREAD_GRAYSCALE), (0, 0), fx=scale, fy=scale))
+        template_corners_dict = {template_file:get_corner_features(cv2.resize(cv2.imread(os.path.join(template_cluster_dict[template_file], template_file), cv2.IMREAD_GRAYSCALE), (0, 0), fx=scale, fy=scale), verbose=verbose-1)
                    for template_file in tqdm(template_files, desc="Reading templates, may take a while", leave=False)}
         
         template_mh = MinHash()
