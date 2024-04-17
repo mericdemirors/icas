@@ -426,7 +426,7 @@ def get_templates_dict(method, template_files, template_cluster_dict, size, scal
             return imagehash.phash(resized_template, hash_size=64, highfreq_factor=16)
         
         results = thread_this(get_template_hash, template_files)
-        templates = {template_file:results[e] for e, template_file in enumerate(template_cluster_dict.values())}
+        templates = {template_file:results[e] for e, template_file in enumerate(template_files)}
 
     elif method == "ORB":
         orb = cv2.ORB_create()

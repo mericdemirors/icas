@@ -17,4 +17,4 @@ TO-TIDY
 
 TO-FIX
 - fix interactive threshold selection
-- fix image and template files paths, make them full path lists
+- fix image and template files paths, make them full path lists(merge get_image_dict and get_template_dict in one and merge get_corner_features etc)
