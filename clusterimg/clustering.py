@@ -17,7 +17,23 @@ from helper_exceptions import *
 
 global GLOBAL_THRESHOLD
 class Clustering():
-    def __init__(self, images_folder_path: str, method: str, threshold: float, batch_size: int, num_of_threads: int=2, scale: float=1, option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
+    def __init__(self, images_folder_path: str, method: str, threshold: float, batch_size: int, num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
+        """initializing clustering object
+
+        Args:
+            images_folder_path (str): folder path of images
+            method (str): method to calculate similarity, decides features
+            threshold (float): decides if X and Y are close or not
+            batch_size (int): number of images in each process batch
+            num_of_threads (int, optional): number of threads to share threaded jobs. Defaults to 2.
+            size (tuple, optional): dsize parameters for cv2.resize. Defaults to (0, 0).
+            scale (tuple, optional): fx and fy parameters for cv2.resize. Defaults to (1.0, 1.0).
+            option (str, optional): decides process type. Defaults to "".
+            transfer (str, optional): transfer type of images. Defaults to "copy".
+            overwrite (bool, optional): permission to overwrite old _clustered folder. Defaults to False.
+            chunk_time_threshold (int, optional): inactivation time limit for checkpoint saving. Defaults to 60.
+            verbose (int, optional): verbose level. Defaults to 0.
+        """
         global GLOBAL_THRESHOLD
         self.images_folder_path = images_folder_path
         self.method = method
@@ -25,6 +41,7 @@ class Clustering():
         self.batch_size = batch_size
         self.num_of_threads = num_of_threads
         self.scale = scale
+        self.size = size
         self.option = option
         self.transfer = transfer
         self.overwrite = overwrite
@@ -85,7 +102,7 @@ class Clustering():
         all_image_files = filter(lambda x: os.path.isfile(os.path.join(folder_path, x)), os.listdir(folder_path))
         selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(folder_path, x)).st_size)[:num_of_files]
 
-        image_feature_dict = get_images_dict(method, selected_image_files, folder_path, self.scale, verbose=verbose-1)
+        image_feature_dict = get_images_dict(method, selected_image_files, folder_path, self.size, self.scale, verbose=verbose-1)
         print_verbose("v", "process for interactive threshold selection is started.", verbose)
         if method == "SSIM":
             def get_structural_similarity(image_pair):
@@ -191,7 +208,7 @@ class Clustering():
             return {}
 
         image_similarities = {}
-        images = get_images_dict(method, image_files, self.images_folder_path, self.scale, verbose=verbose-1)
+        images = get_images_dict(method, image_files, self.images_folder_path, self.size, self.scale, verbose=verbose-1)
 
         comb = list(combinations(image_files, 2))  # all pair combinations of images
         bools = np.ones((len(image_files), len(image_files)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
@@ -265,7 +282,7 @@ class Clustering():
             return {}
 
         template_similarities = {}
-        templates = get_templates_dict(self.method, template_files, template_cluster_dict, self.scale, verbose=verbose-1)
+        templates = get_templates_dict(self.method, template_files, template_cluster_dict, self.size, self.scale, verbose=verbose-1)
 
         list_of_batch_templates = []
         for unique_path in set([os.path.split(x)[0] for x in template_cluster_dict.values()]):
