@@ -12,5 +12,4 @@ TO-ADD
 TO-TIDY
 
 TO-FIX
-- class parametrelerini(mesela overwrite'ı boolean yapma) düzenle
 - fix interactive threshold selection
