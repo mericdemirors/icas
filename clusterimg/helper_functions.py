@@ -261,8 +261,8 @@ def thread_this(func, params):
     Returns:
         list: list of parallel execution results
     """
-    from clustering import GLOBAL_THRESHOLD
-    with concurrent.futures.ThreadPoolExecutor(max_workers=GLOBAL_THRESHOLD) as executor:
+    from clustering import GLOBAL_THREADS
+    with concurrent.futures.ThreadPoolExecutor(max_workers=GLOBAL_THREADS) as executor:
         results = list(executor.map(func, params))
     return results
 
@@ -307,7 +307,7 @@ def get_images_dict(method, image_files, images_folder_path, size, scale, verbos
     images = {}
     
     if method == "SSIM":
-        images = {image_file:read_and_resize(os.path.join(images_folder_path, image_file), size, scale) for image_file in tqdm(image_files, desc="Reading images, may take a while", leave=False)}
+        images = {image_file:read_and_resize(os.path.join(images_folder_path, image_file), size, scale) for image_file in tqdm(image_files, desc="Reading images for SSIM, may take a while", leave=False)}
         
     elif method == "minhash":
         def get_image_corners(image_file):
@@ -324,7 +324,6 @@ def get_images_dict(method, image_files, images_folder_path, size, scale, verbos
         results = thread_this(get_image_corners, image_files)
         img_corners_dict = {image_file:results[e] for e, image_file in enumerate(image_files)}
 
-        images = {}
         img_mh = MinHash()
         for (file, corners) in tqdm(list(img_corners_dict.items()), desc="Minhashing features", leave=False):
             img_mh.update_batch(corners)
@@ -366,7 +365,7 @@ def get_images_dict(method, image_files, images_folder_path, size, scale, verbos
         images = {image_file:results[e] for e, image_file in enumerate(image_files)}
 
     elif method == "TM":
-        images = {image_file:read_and_resize(os.path.join(images_folder_path, image_file), size, scale) for image_file in tqdm(image_files, desc="Reading images, may take a while", leave=False)}
+        images = {image_file:read_and_resize(os.path.join(images_folder_path, image_file), size, scale) for image_file in tqdm(image_files, desc="Reading images for TM, may take a while", leave=False)}
 
     return images
 
@@ -389,27 +388,49 @@ def get_templates_dict(method, template_files, template_cluster_dict, size, scal
     templates = {}
 
     if method == "SSIM":
-        templates = {template_file:read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale) for template_file in tqdm(template_files, desc="Reading templates, may take a while", leave=False)}
+        templates = {template_file:read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale) for template_file in tqdm(template_files, desc="Reading templates for SSIM, may take a while", leave=False)}
 
     elif method == "minhash":
-        template_corners_dict = {template_file:get_corner_features(read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale), verbose=verbose-1)
-                   for template_file in tqdm(template_files, desc="Reading templates, may take a while", leave=False)}
-        
+        def get_template_corners(template_file):
+            """gets given templates corner features, this method is writed to suit to thread_this() call
+
+            Args:
+                imatemplate_filege_file (str): name of template file
+
+            Returns:
+                list: list of corner features of given template
+            """
+            return get_corner_features(read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale), verbose=verbose-1)
+
+        results = thread_this(get_template_corners, template_files)
+        template_corners_dict = {template_file:results[e] for e, template_file in enumerate(template_files)}
+
         template_mh = MinHash()
-        for (template_file, corners) in tqdm(list(template_corners_dict.items()), leave=False):
+        for (file, corners) in tqdm(list(template_corners_dict.items()), desc="Minhashing features", leave=False):
             template_mh.update_batch(corners)
-            templates[template_file] = template_mh.copy()
+            templates[file] = template_mh.copy()
             template_mh.clear()
 
     elif method == "imagehash":
-        for template_file in tqdm(template_files, desc="Reading templates, may take a while", leave=False):
-            template = Image.open(os.path.join(template_cluster_dict[template_file], template_file))
+        def get_template_hash(template_file):
+            """gets given templates perceptual hash, this method is writed to suit to thread_this() call
+
+            Args:
+                template_file (str): name of template file
+
+            Returns:
+                <class 'imagehash.ImageHash'>: hash of given template
+            """
+            template = Image.open(template_cluster_dict[template_file])
             resized_template = template.resize((int(template.size[0] * scale[0]), int(template.size[1] * scale[1])))
-            templates[template_file] = imagehash.phash(resized_template, hash_size=64, highfreq_factor=16)
+            return imagehash.phash(resized_template, hash_size=64, highfreq_factor=16)
+        
+        results = thread_this(get_template_hash, template_files)
+        templates = {template_file:results[e] for e, template_file in enumerate(template_cluster_dict.values())}
 
     elif method == "ORB":
         orb = cv2.ORB_create()
-        def get_image_fetaures(template_file):
+        def get_template_fetaures(template_file):
             """gets given templates ORB features, this method is writed to suit to thread_this() call
 
             Args:
@@ -418,14 +439,14 @@ def get_templates_dict(method, template_files, template_cluster_dict, size, scal
             Returns:
                 numpy.ndarray: features of image
             """
-            image_keypoints, image_descriptors = orb.detectAndCompute(read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale), None)
-            return image_descriptors
+            template_keypoints, template_descriptors = orb.detectAndCompute(read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale), None)
+            return template_descriptors
 
-        results = thread_this(get_image_fetaures, template_files)
+        results = thread_this(get_template_fetaures, template_files)
         templates = {template_file:results[e] for e, template_file in enumerate(template_files)}
 
     elif method == "TM":
-        templates = {template_file:read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale) for template_file in tqdm(template_files, desc="Reading templates, may take a while", leave=False)}
+        templates = {template_file:read_and_resize(os.path.join(template_cluster_dict[template_file], template_file), size, scale) for template_file in tqdm(template_files, desc="Reading templates for TM, may take a while", leave=False)}
 
     return templates
 

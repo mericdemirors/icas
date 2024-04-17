@@ -16,6 +16,7 @@ from helper_functions import cluster, calculate_similarity, print_verbose, threa
 from helper_exceptions import *
 
 global GLOBAL_THRESHOLD
+global GLOBAL_THREADS
 class Clustering():
     def __init__(self, images_folder_path: str, method: str, threshold: float, batch_size: int, num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
         """initializing clustering object
@@ -34,7 +35,7 @@ class Clustering():
             chunk_time_threshold (int, optional): inactivation time limit for checkpoint saving. Defaults to 60.
             verbose (int, optional): verbose level. Defaults to 0.
         """
-        global GLOBAL_THRESHOLD
+        global GLOBAL_THRESHOLD, GLOBAL_THREADS
         self.images_folder_path = images_folder_path
         self.method = method
         self.threshold = threshold
@@ -50,6 +51,7 @@ class Clustering():
         self.similarity_threshold = self.threshold
         self.clustering_threshold = self.threshold
         GLOBAL_THRESHOLD = self.threshold
+        GLOBAL_THREADS = self.num_of_threads
         self.lock = Lock()
 
         if self.option == "merge":
@@ -98,7 +100,7 @@ class Clustering():
         Returns:
             None: if method is SSIM(structural_similarity) no interactive selection can be made(takes to much time) so return is used for terminating the function
         """
-        # sort file names by size tqdm
+        # sort file names by size
         all_image_files = filter(lambda x: os.path.isfile(os.path.join(folder_path, x)), os.listdir(folder_path))
         selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(folder_path, x)).st_size)[:num_of_files]
 
@@ -121,11 +123,11 @@ class Clustering():
 
         elif method == "minhash":
             minhashs_combs = list(combinations(list(image_feature_dict.values()), 2))
-            sim_list = [mh1.jaccard(mh2) for (mh1, mh2) in tqdm(minhashs_combs, desc="Calculating similarity", leave=False)]
+            sim_list = [mh1.jaccard(mh2) for (mh1, mh2) in tqdm(minhashs_combs, desc="Calculating minhash similarity", leave=False)]
 
         elif method == "imagehash":
             file_combs = list(combinations(list(image_feature_dict.keys()), 2))
-            sim_list = [1 - (image_feature_dict[f1] - image_feature_dict[f2]) / len(image_feature_dict[f1].hash) for (f1, f2) in tqdm(file_combs, desc="Calculating similarity", leave=False)]
+            sim_list = [1 - (image_feature_dict[f1] - image_feature_dict[f2]) / len(image_feature_dict[f1].hash) for (f1, f2) in tqdm(file_combs, desc="Calculating imagehash similarity", leave=False)]
         
         elif method == "ORB":
             bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -181,7 +183,6 @@ class Clustering():
             global GLOBAL_THRESHOLD
             if event.button == 1:
                 self.threshold = event.ydata
-                GLOBAL_THRESHOLD = self.threshold
                 plt.close()
 
         y = sorted(sim_list, reverse=True)
