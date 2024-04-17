@@ -169,13 +169,12 @@ def select_threshold(method, folder_path, num_of_files=1000, verbose=0):
     plt.gcf().canvas.mpl_connect('button_press_event', on_click)
     plt.show() 
 
-# setting folders
+# # setting folders
 if option == "merge":
-    # folder must be end with "_clustered"
-    images_folder_path = images_folder_path[:-10]
-
-base_folder, images_folder_name = os.path.split(images_folder_path)
-destination_container_folder = os.path.join(base_folder, images_folder_name + "_clustered")
+    destination_container_folder = images_folder_path
+else:
+    base_folder, images_folder_name = os.path.split(images_folder_path)
+    destination_container_folder = os.path.join(base_folder, images_folder_name + "_clustered")
 
 if option != "merge":
     try:

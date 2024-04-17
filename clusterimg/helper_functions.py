@@ -153,7 +153,7 @@ def calculate_similarity(
         lock.acquire()
         last_checkpoint_time[0] = now
         with open(os.path.join(destination_container_folder_base, "image_similarities_batch_" + str(batch_idx) + "_checkpoint.json"), "w") as json_file:
-            json.dump({str(k): v for (k, v) in list(image_similarities.items())}, json_file, indent="\n")
+            json.dump({str(k): v for (k, v) in list(image_similarities.items())}, json_file, indent="")
         print_verbose(batch_idx, "image_similarities saved(checkpoint)", verbose)
         lock.release()
 
@@ -170,7 +170,7 @@ def save_checkpoint(batch_idx, path_to_write, image_similarities, verbose=0):
     # last checkpoint at the end of process
     dict_to_save = {str(k): v for (k, v) in list(image_similarities.items())}
     with open(os.path.join(path_to_write, "image_similarities_batch_" + str(batch_idx) + ".json"), "w") as json_file:
-        json.dump(dict_to_save, json_file, indent="\n")
+        json.dump(dict_to_save, json_file, indent="")
     print_verbose(batch_idx, "image_similarities saved", verbose)
 
 # How to read checkpoint dictionary
