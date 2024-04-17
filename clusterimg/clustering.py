@@ -15,7 +15,14 @@ from threading import Lock
 
 from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, image_hash_similarity, save_checkpoint, write_clusters, get_images_dict, get_templates_dict
 
+
+
 def parse_arguments():
+    """parses and checks argumans provided
+
+    Returns:
+        argparse argumans: parsed argumans
+    """
     parser = argparse.ArgumentParser(description='Parameters')
     parser.add_argument('-path', '-p', type=str, default="", help='Path to image folder. default is: \"\"')
     parser.add_argument('-method', '-m', type=str, default="", help='Method to use. SSIM: slow, good at big images imagehash: mid speed, good at small images minhash: fastest, mid solution for both cases ORB: slow and bad TM: slow and bad. default is: \"\"')
@@ -28,25 +35,28 @@ def parse_arguments():
     parser.add_argument('-chunk_time_threshold', '-ct', type=int, default=60, help='Number of seconds to save checkpoint files after. default is: 60')
     parser.add_argument('-transfer', '-tr', type=str, default="copy", help='How to transfer image files. default is: copy')
     parser.add_argument('-verbose', '-v', type=int, default=0, help='Verbose level. default is: 0')
+    
+    def arguman_check(args, verbose=0):
+        """checks given argumans validity
+
+        Args:
+            args (argparse argumans): arguman parser object
+            verbose (int, optional): verbose level. Defaults to 0.
+        """
+        valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
+        valid_options = ["merge", "dontmerge", ""]
+        valid_transfer = ["copy", "move"]
+
+        if args.method not in valid_methods:
+            print_verbose("e", "invalid method type", verbose)
+        if args.option not in valid_options:
+            print_verbose("e", "invalid option type", verbose)
+        if args.transfer not in valid_transfer:
+            print_verbose("e", "invalid transfer type", verbose)
+    arguman_check(parser.parse_args(), parser.parse_args().verbose-1)
+    
     return parser.parse_args()
 
-def arguman_check(args, verbose=0):
-    """checks given argumans validity
-
-    Args:
-        args (argparsa argumans): arguman parser object
-        verbose (int, optional): verbose level. Defaults to 0.
-    """
-    valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
-    valid_options = ["merge", "dontmerge", ""]
-    valid_transfer = ["copy", "move"]
-
-    if args.method not in valid_methods:
-        print_verbose("e", "invalid method type", verbose)
-    if args.option not in valid_options:
-        print_verbose("e", "invalid option type", verbose)
-    if args.transfer not in valid_transfer:
-        print_verbose("e", "invalid transfer type", verbose)
 
 args = parse_arguments()
 images_folder_path = args.path
@@ -60,7 +70,8 @@ num_of_threads = args.num_of_threads
 chunk_time_threshold = args.chunk_time_threshold
 transfer = args.transfer
 verbose = args.verbose
-arguman_check(args, verbose=verbose-1)
+
+lock = Lock()
 
 # lets user interactively select threshold for some methods
 def select_threshold(method, folder_path, num_of_files=1000, verbose=0):
@@ -177,20 +188,16 @@ else:
     destination_container_folder = os.path.join(base_folder, images_folder_name + "_clustered")
 
 if option != "merge":
-    try:
-        os.makedirs(destination_container_folder)
-    except FileExistsError as e:
-        if overwrite in ["Y", "y", ""]:
+    if os.path.exists(destination_container_folder) and overwrite not in ["Y", "y"]:
+        print_verbose("f", "no permission to overwrite", verbose)
+    else:
+        if os.path.exists(destination_container_folder):
             shutil.rmtree(destination_container_folder)
-            os.makedirs(destination_container_folder)
-        else:
-            print_verbose("f", "folder not overwrited, nothing to do", verbose)
+        os.makedirs(destination_container_folder)        
 
 # interactive threshold selection is disabled because of "FigureCanvasAgg is non-interactive, and thus cannot be shown" error"
 # select_threshold(method, images_folder_path, min(batch_size, 1000))
 similarity_threshold = clustering_threshold = threshold
-
-lock = Lock()
 
 # calculates similarities between given images
 def calculate_batch_similarity(batch_idx, image_files, method, verbose=0):
@@ -428,9 +435,6 @@ def process_images(batch_idx, image_files, destination_container_folder, verbose
     write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer, verbose=verbose-1)
     save_checkpoint(batch_idx, destination_container_folder, image_similarities, verbose=verbose-1)
     print("-"*70)
-
-
-
 
 
 if __name__ == "__main__":
