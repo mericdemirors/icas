@@ -8,10 +8,10 @@ TO-ADD
 - test code
 - openmp
 - C/C++/CUDA optimization
-- parametre vererek main dosyasından çağrılabilir fonksiyon haline getir
-- terminalden çalıştırılabilir hale getir
 
 TO-TIDY
+- class comment'le
 
 TO-FIX
+- class parametrelerini(mesela overwrite'ı boolean yapma) düzenle
 - fix interactive threshold selection

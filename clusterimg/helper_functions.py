@@ -13,6 +13,8 @@ from PIL import Image
 from datasketch import MinHash
 from skimage.metrics import structural_similarity
 
+from helper_exceptions import *
+
 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
 # Clustering images
@@ -127,12 +129,8 @@ def calculate_similarity(
                 sim = len(good_matches) / len(matches)
             elif method == "TM":
                 sim = np.float64(np.min(cv2.matchTemplate(images[img1_file], images[img2_file], cv2.TM_SQDIFF_NORMED)))
-            else:
-                print_verbose("e", "Error while similarity calculation(setting pair similarity to -np.inf): " + str(e), verbose)
-                sim = -np.inf
         except Exception as e:
-            print_verbose("e", "Error while similarity calculation(setting pair similarity to -np.inf): " + str(e), verbose)
-            sim = -np.inf
+            print_verbose("e", "error while similarity calculation: " + str(e), verbose)
 
         if sim > similarity_threshold:
             lock.acquire()
@@ -233,24 +231,22 @@ def print_verbose(verbose_type, message, verbose=0):
     """
     output = "[" + time.strftime("%H:%M:%S") + "] - " 
     if isinstance(verbose_type, int):
-        output = output + "[batch " + str(verbose_type) + "] | " + message
+        output = output + "[batch " + str(verbose_type) + "]  | " + message
     elif verbose_type == "r":
-        output = output + "[result]  | " + message
+        output = output + "[result]   | " + message
     elif verbose_type == "v":
-        output = output + "[verbose] | " + message
+        output = output + "[verbose]  | " + message
     elif verbose_type == "m":
-        output = output + "[merge]   | " + message
+        output = output + "[merge]    | " + message
     elif verbose_type == "f":
-        output = output + "[finish]  | " + message
-        print(output)
-        exit(0)
+        output = output + "[finish]   | " + message
+        raise(FinishException(output))
     elif verbose_type == "e":
-        output = output + "[error]   | " + message
-        print(output)
-        exit(0)
+        output = output + "[error]    | " + message
+        raise(ErrorException(output))
     else:
-        print("wrong output verbose type")
-        exit(0)
+        output = output + "[wrong vt] | wrong verbose type"
+        raise(WrongTypeException(output))
 
     if verbose > 0:
         print(output)
@@ -267,8 +263,8 @@ def thread_this(func, params):
     Returns:
         list: list of parallel execution results
     """
-    from clustering import num_of_threads
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_of_threads) as executor:
+    from clustering import GLOBAL_THRESHOLD
+    with concurrent.futures.ThreadPoolExecutor(max_workers=GLOBAL_THRESHOLD) as executor:
         results = list(executor.map(func, params))
     return results
 
@@ -295,23 +291,6 @@ def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=
     indices_of_largest_values = np.argpartition(flattened_corners, -top_n_corners)[-top_n_corners:]
     return sorted(indices_of_largest_values)
 
-# calculates similarity between 2 image perceptual hashs
-def image_hash_similarity(imgph1, imgph2, verbose=0):
-    """calculates similarity between 2 image perceptual hashs
-
-    Args:
-        imgph1 (<class 'imagehash.ImageHash'>): hash of first image
-        imgph2 (<class 'imagehash.ImageHash'>): hash of second image
-        verbose (int, optional): verbose level. Defaults to 0.
-
-    Returns:
-        float: similarity metric between 2 hash
-    """
-    try:
-        return 1 - (imgph1 - imgph2) / len(imgph1.hash)  # Normalize the score to be between 0 and 1
-    except Exception as e:
-        print_verbose("e", "Error while calculating image hash similarity: " + str(e), verbose)
-    
 # returns images and related features dict
 def get_images_dict(method, image_files, images_folder_path, scale, verbose=0):
     """returns images and related features dict
