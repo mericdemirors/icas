@@ -17,23 +17,23 @@ from helper_exceptions import *
 
 global GLOBAL_THRESHOLD
 class Clustering():
-    def __init__(self, images_folder_path, method, option, batch_size, scale, threshold, overwrite, num_of_threads, chunk_time_threshold, transfer, verbose):
+    def __init__(self, images_folder_path: str, method: str, threshold: float, batch_size: int, num_of_threads: int=2, scale: float=1, option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
         global GLOBAL_THRESHOLD
         self.images_folder_path = images_folder_path
         self.method = method
-        self.option = option
-        self.batch_size = batch_size
-        self.scale = scale
         self.threshold = threshold
-        self.overwrite = overwrite
+        self.batch_size = batch_size
         self.num_of_threads = num_of_threads
-        self.chunk_time_threshold = chunk_time_threshold
+        self.scale = scale
+        self.option = option
         self.transfer = transfer
+        self.overwrite = overwrite
+        self.chunk_time_threshold = chunk_time_threshold
         self.verbose = verbose
-        self.lock = Lock()
         self.similarity_threshold = self.threshold
         self.clustering_threshold = self.threshold
         GLOBAL_THRESHOLD = self.threshold
+        self.lock = Lock()
 
         if self.option == "merge":
             self.destination_container_folder = self.images_folder_path
@@ -42,11 +42,21 @@ class Clustering():
             self.destination_container_folder = os.path.join(base_folder, images_folder_name + "_clustered")
 
     def __str__(self):
+        """casting to string method for printing/debugging object attributes
+
+        Returns:
+            str: object attribute information
+        """
         attributes = vars(self)
         attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
         return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
 
     def arguman_check(self, verbose=0):
+        """checks validity of object initialization parameters
+
+        Args:
+            verbose (int, optional): verbose level. Defaults to 0.
+        """
         valid_methods = ["SSIM", "minhash", "imagehash", "ORB", "TM"]
         valid_options = ["merge", "dontmerge", ""]
         valid_transfer = ["copy", "move"]
@@ -58,8 +68,7 @@ class Clustering():
         if self.transfer not in valid_transfer:
             print_verbose("e", "invalid transfer type", verbose)
 
-    # interactive threshold selection is disabled because of "FigureCanvasAgg is non-interactive, and thus cannot be shown" error"        
-    # select_threshold(method, images_folder_path, min(batch_size, 1000))
+    # TODO interactive threshold selection is disabled because of "FigureCanvasAgg is non-interactive, and thus cannot be shown" error"
     def select_threshold(self, method, folder_path, num_of_files=1000, verbose=0):
         """Lets user interactively select threshold
 
@@ -72,7 +81,6 @@ class Clustering():
         Returns:
             None: if method is SSIM(structural_similarity) no interactive selection can be made(takes to much time) so return is used for terminating the function
         """
-        global threshold
         # sort file names by size tqdm
         all_image_files = filter(lambda x: os.path.isfile(os.path.join(folder_path, x)), os.listdir(folder_path))
         selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(folder_path, x)).st_size)[:num_of_files]
@@ -153,9 +161,10 @@ class Clustering():
             Args:
                 event (<class 'matplotlib.backend_bases.MouseEvent'>): event catcher
             """
-            global threshold
+            global GLOBAL_THRESHOLD
             if event.button == 1:
-                threshold = event.ydata
+                self.threshold = event.ydata
+                GLOBAL_THRESHOLD = self.threshold
                 plt.close()
 
         y = sorted(sim_list, reverse=True)
@@ -403,11 +412,14 @@ class Clustering():
         save_checkpoint(batch_idx, destination_container_folder, image_similarities, verbose=verbose-1)
         print("-"*70)
 
+    # full process in one function
     def process(self):
+        """function to capsulate all pipeline in one call
+        """
         self.arguman_check(self.verbose-1)
 
         if self.option != "merge":
-            if os.path.exists(self.destination_container_folder) and self.overwrite not in ["Y", "y"]:
+            if os.path.exists(self.destination_container_folder) and not self.overwrite:
                 print_verbose("e", "no permission to overwrite", self.verbose)
             else:
                 if os.path.exists(self.destination_container_folder):
@@ -474,7 +486,10 @@ class Clustering():
                 if os.path.isfile(os.path.join(self.destination_container_folder, folder)):
                     os.remove(os.path.join(self.destination_container_folder, folder))
 
+    # call method to capsulate process function and custom exceptions
     def __call__(self):
+        """calling the object will start the main process and catch any possible exception during
+        """
         try:
             self.process()
         except FinishException as fe:

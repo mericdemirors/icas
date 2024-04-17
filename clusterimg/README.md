@@ -10,7 +10,6 @@ TO-ADD
 - C/C++/CUDA optimization
 
 TO-TIDY
-- class comment'le
 
 TO-FIX
 - class parametrelerini(mesela overwrite'ı boolean yapma) düzenle

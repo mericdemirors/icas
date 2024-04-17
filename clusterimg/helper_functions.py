@@ -219,7 +219,6 @@ def write_clusters(clusters, batch_idx, images_folder_path, destination_containe
     if transfer == "move":
         [shutil.move(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
 
-
 # prints verboses in a format
 def print_verbose(verbose_type, message, verbose=0):
     """Prints verbose messages
