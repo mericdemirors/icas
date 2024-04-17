@@ -1,13 +1,15 @@
 import os
-import shutil
 import json
 import time
+import shutil
+import random
 import datetime
 import concurrent.futures
 
 import cv2
 import numpy as np
 from tqdm.auto import tqdm
+
 import imagehash
 from PIL import Image
 from datasketch import MinHash
@@ -421,7 +423,7 @@ def get_templates_dict(method, template_files, template_cluster_dict, size, scal
             Returns:
                 <class 'imagehash.ImageHash'>: hash of given template
             """
-            template = Image.open(template_cluster_dict[template_file])
+            template = Image.open(os.path.join(template_cluster_dict[template_file], template_file))
             resized_template = template.resize((int(template.size[0] * scale[0]), int(template.size[1] * scale[1])))
             return imagehash.phash(resized_template, hash_size=64, highfreq_factor=16)
         
@@ -473,3 +475,37 @@ def read_and_resize(path, size=(0,0), scale=(1.0, 1.0), gray=True):
         image = cv2.resize(image, dsize=size)
 
     return image
+
+def generate_image(character_to_put_on, size=100, x=30, y=70, rand_RGB_value=20, rand_xy_value = 5):
+    """function to generate test dataset images
+
+    Args:
+        character_to_put_on (str): character to write on image
+        size (int, optional): size of image. Defaults to 100.
+        x (int, optional): x coordinate of character. Defaults to 30.
+        y (int, optional): y coordinate of character. Defaults to 70.
+        rand_RGB_value (int, optional): random RGB shift. Defaults to 20.
+        rand_xy_value (int, optional): random coordinate shift. Defaults to 5.
+
+    Returns:
+        numpy.ndarray: prepared image
+    """
+    bg = (220 + random.randint(-rand_RGB_value, rand_RGB_value), 245 + random.randint(-rand_RGB_value, rand_RGB_value), 245 + random.randint(-rand_RGB_value, rand_RGB_value))
+
+    background = np.full((size, size, 3), bg, dtype=np.uint8)
+    background = cv2.putText(background, character_to_put_on, (x + random.randint(-rand_xy_value, rand_xy_value), y + random.randint(-rand_xy_value, rand_xy_value)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,0), 4, cv2.LINE_AA) 
+
+    return background
+
+def generate_test_dataset(path, count):
+    """function to generate test dataset
+
+    Args:
+        path (str): folder path to generate images in
+        count (int): number of images
+    """
+    os.makedirs(path, exist_ok=True)
+    for i in range(count):
+        character = random.choice("0123456789")
+        image = generate_image(character)
+        cv2.imwrite(os.path.join(path, str(i) + character + ".png"), image)
