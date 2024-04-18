@@ -16,6 +16,7 @@ from datasketch import MinHash
 from skimage.metrics import structural_similarity
 
 from helper_exceptions import *
+from global_variables import GLOBAL_THREADS
 
 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
@@ -29,46 +30,46 @@ def cluster(sorted_similarities, clustering_threshold, verbose=0):
         verbose (int, optional): verbose level. Defaults to 0.
         
     Returns:
-        tuple: clusters -> list of clusters, added_img -> list of items that are clustered
+        tuple: clusters -> list of clusters, clustered_images -> list of items that are clustered
     """
-    added_img = []
+    clustered_images = []
     clusters = []
 
-    for (img1, img2), s in sorted_similarities:
-        if s < clustering_threshold:
+    for (image1, image2), sim in sorted_similarities:
+        if sim < clustering_threshold:
             continue
 
         # if both are not added: new class found
-        if (img1 not in added_img) and (img2 not in added_img):
-            added_img.append(img1)
-            added_img.append(img2)
-            clusters.append([img1, img2])
+        if (image1 not in clustered_images) and (image2 not in clustered_images):
+            clustered_images.append(image1)
+            clustered_images.append(image2)
+            clusters.append([image1, image2])
 
         # if both are added in different cluster: merge 2 different parts of the same cluster
-        elif (img1 in added_img) and (img2 in added_img):
+        elif (image1 in clustered_images) and (image2 in clustered_images):
             for c in clusters:
-                if img1 in c:
-                    img1_c = c
-                if img2 in c:
-                    img2_c = c
-            if img1_c != img2_c:
-                clusters.append(img1_c + img2_c)
-                clusters.remove(img1_c)
-                clusters.remove(img2_c)
+                if image1 in c:
+                    image1_c = c
+                if image2 in c:
+                    image2_c = c
+            if image1_c != image2_c:
+                clusters.append(image1_c + image2_c)
+                clusters.remove(image1_c)
+                clusters.remove(image2_c)
 
         # if only one is added: add non-added one to others cluster
-        elif (img1 not in added_img) and img2 in added_img:
+        elif (image1 not in clustered_images) and image2 in clustered_images:
             for c in clusters:
-                if img2 in c:
-                    c.append(img1)
-                    added_img.append(img1)
-        elif (img2 not in added_img) and img1 in added_img:
+                if image2 in c:
+                    c.append(image1)
+                    clustered_images.append(image1)
+        elif (image2 not in clustered_images) and image1 in clustered_images:
             for c in clusters:
-                if img1 in c:
-                    c.append(img2)
-                    added_img.append(img2)
+                if image1 in c:
+                    c.append(image2)
+                    clustered_images.append(image2)
 
-    return clusters, added_img
+    return clusters, clustered_images
 
 # Calculating similarities of 2 images (needs to be faster, needs to have early stopping)
 def calculate_similarity(
@@ -99,7 +100,7 @@ def calculate_similarity(
         chunk_idx (int): chunks id between all chunks
         lock (Lock from threading library): for locking the threads
         similarity_threshold (float): decides if 2 image is similar or not
-        image_similarities (dictionary): dictionary in form ((img1, img2): similarity_between_img1_and_img2)
+        image_similarities (dictionary): dictionary in form ((image1, image2): similarity_between_image1_and_image2)
         images (dictionary): dictionary of image path:image feature
         bools (numpy.ndarray): index [i, j] indicates whether to calculate the similarity of image i and j or not
         last_checkpoint_time (list): last time of checkpoint, when did image_similarities last saved into a file
@@ -113,43 +114,50 @@ def calculate_similarity(
     """
     now = datetime.datetime.now()
 
-    img1_file, img2_file = tpl
+    image1_file, image2_file = tpl
 
     if bools[im1_idx][im2_idx]:
         # trying to calculate similarity
         try:
             if method == "SSIM":
-                sim = structural_similarity(images[img1_file], images[img2_file], full=True)[0]
+                sim = structural_similarity(images[image1_file], images[image2_file], full=True)[0]
+            
             elif method == "minhash":
-                sim = images[img1_file].jaccard(images[img2_file])
+                sim = images[image1_file].jaccard(images[image2_file])
+            
             elif method == "imagehash":
-                sim = 1 - (images[img1_file] - images[img2_file]) / len(images[img1_file].hash)
+                sim = 1 - (images[image1_file] - images[image2_file]) / len(images[image1_file].hash)
+            
             elif method == "ORB":
-                matches = bf.match(images[img1_file], images[img2_file])
+                matches = bf.match(images[image1_file], images[image2_file])
                 matches = sorted(matches, key=lambda x: x.distance)
                 good_matches = [match for match in matches if match.distance < 0.75 * max(matches, key=lambda x: x.distance).distance]
                 sim = len(good_matches) / len(matches)
+            
             elif method == "TM":
-                sim = np.float64(np.min(cv2.matchTemplate(images[img1_file], images[img2_file], cv2.TM_SQDIFF_NORMED)))
+                sim = np.float64(np.min(cv2.matchTemplate(images[image1_file], images[image2_file], cv2.TM_SQDIFF_NORMED)))
+        
         except Exception as e:
             sim = -np.inf
             print_verbose("w", "error while similarity calculation(setting image similarity to -np.inf):\n" + str(e), verbose)
 
+        # if similar
         if sim > similarity_threshold:
             lock.acquire()
             chunk_last_work_time_dict[chunk_idx] = now
 
-            # if similar, store the similarity and disable indices for computation efficiency
-            image_similarities[(img1_file, img2_file)] = sim
+            # store the similarity and disable indices for computation efficiency
+            image_similarities[(image1_file, image2_file)] = sim
             bools[im2_idx, :] = 0
             bools[:, im2_idx] = 0
 
-            if verbose:
-                if (now - last_verbose_time[0]).total_seconds() > 60:
-                    last_verbose_time[0] = now
-                    print_verbose(batch_idx, "remaining combinations to check: " + str(int(bools.sum() / 2)), verbose)
+            # if it is time to verbose
+            if verbose and (now - last_verbose_time[0]).total_seconds() > 60:
+                last_verbose_time[0] = now
+                print_verbose(batch_idx, "remaining combinations to check: " + str(int(bools.sum() / 2)), verbose)
             lock.release()
 
+    # if it is time to save a checkpoint
     if (now - last_checkpoint_time[0]).total_seconds() > chunk_time_threshold:
         lock.acquire()
         last_checkpoint_time[0] = now
@@ -191,35 +199,34 @@ def load_checkpoint(path, verbose=0):
     return loaded
 
 # writes clusters into destination
-def write_clusters(clusters, batch_idx, images_folder_path, destination_container_folder, outliers, transfer, verbose=0):
+def write_clusters(clusters, batch_idx, destination_container_folder, outliers, transfer, verbose=0):
     """writes image clusters to a folder
 
     Args:
         clusters (list): list of clusters
         batch_idx (int): index of batch
-        images_folder_path(str): folder path of images
         destination_container_folder (str): path to folder to write into
         outliers (list): list of outlier images
         transfer (str): transfer type of images
         verbose (int, optional): verbose level. Defaults to 0.
     """
-    # Loop through each cluster, create a folder and copy images in that cluster to folder
+    # Loop through each cluster, create a folder and transfer images in that cluster to folder
     for i, image_list in enumerate([c for c in clusters if len(c) > 1]):
         destination_folder_path = os.path.join(destination_container_folder, "batch_" + str(batch_idx), "cluster_" + str(i))
 
         os.makedirs(destination_folder_path)
         if transfer == "copy":
-            [shutil.copy(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in image_list]
+            [shutil.copy(image_filename, destination_folder_path) for image_filename in image_list]
         if transfer == "move":
-            [shutil.move(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in image_list]
+            [shutil.move(image_filename, destination_folder_path) for image_filename in image_list]
 
     # write all non-clustered image into outliers folder
     destination_folder_path = os.path.join(destination_container_folder, "batch_" + str(batch_idx), "outliers")
     os.makedirs(destination_folder_path)
     if transfer == "copy":
-        [shutil.copy(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
+        [shutil.copy(image_filename, destination_folder_path) for image_filename in outliers]
     if transfer == "move":
-        [shutil.move(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
+        [shutil.move(image_filename, destination_folder_path) for image_filename in outliers]
 
     print_verbose(batch_idx, str(len(clusters)) + " cluster found", verbose)
 
@@ -267,54 +274,52 @@ def thread_this(func, params):
     Returns:
         list: list of parallel execution results
     """
-    from clustering import GLOBAL_THREADS
     with concurrent.futures.ThreadPoolExecutor(max_workers=GLOBAL_THREADS) as executor:
         results = list(executor.map(func, params))
     return results
 
-# returns most distinct n corners coordinates of image
-def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=100, verbose=0):
-    """Extracts most distinct top_n_corners location as an array
-
-    Args:
-        gray_image (numpy.ndarray): grayscale image to extarct feature from
-        blockSize (int, optional): cv2.cornerHarris parameter. Defaults to 2.
-        ksize (int, optional): cv2.cornerHarris parameter. Defaults to 3.
-        k (float, optional): cv2.cornerHarris parameter. Defaults to 0.04.
-        top_n_corners (int, optional): number of corners to extract from image. Defaults to 100.
-        verbose (int, optional): verbose level. Defaults to 0.
-        
-    Returns:
-        list: list of corner coordinates
-    """
-    # returns most obvious n corners flatted indices
-    corners = cv2.cornerHarris(gray_image, blockSize, ksize, k)
-    corners = cv2.dilate(corners, None)
-    flattened_corners = corners.flatten()
-
-    indices_of_largest_values = np.argpartition(flattened_corners, -top_n_corners)[-top_n_corners:]
-    return sorted(indices_of_largest_values)
-
 # returns images and related features dict
-def get_images_dict(method, image_paths, size, scale, verbose=0):
+def get_image_features(method, image_paths, size, scale, verbose=0):
     """returns images and related features dict
 
     Args:
         method (str): method to calculate similarity, decides features
-        image_paths (list): list of image file paths
+        image_paths (list): list of image paths
         size (tuple): dsize parameters for cv2.resize
         scale (tuple): fx and fy parameters for cv2.resize
         verbose (int, optional): verbose level. Defaults to 0.
 
-    Returns:
-        dictionary: dictionary of image paths and related features
+        Returns:
+        dictionary: dictionary of images and related features
     """
-    images = {}
-    
+
+    image_features = {}
+
     if method == "SSIM":
-        images = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for SSIM, may take a while", leave=False)}
-        
+        image_features = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for SSIM, may take a while", leave=False)}
+
     elif method == "minhash":
+        # returns most distinct n corners coordinates of image
+        def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=100, verbose=0):
+            """Extracts most distinct top_n_corners location as an array
+
+            Args:
+                gray_image (numpy.ndarray): grayscale image to extarct feature from
+                blockSize (int, optional): cv2.cornerHarris parameter. Defaults to 2.
+                ksize (int, optional): cv2.cornerHarris parameter. Defaults to 3.
+                k (float, optional): cv2.cornerHarris parameter. Defaults to 0.04.
+                top_n_corners (int, optional): number of corners to extract from image. Defaults to 100.
+                verbose (int, optional): verbose level. Defaults to 0.
+                
+            Returns:
+                list: list of corner coordinates
+            """
+            # returns most obvious n corner points indices in list
+            corners = cv2.cornerHarris(gray_image, blockSize, ksize, k)
+            flattened_corners = corners.flatten()
+
+            indices_of_largest_values = np.argpartition(flattened_corners, -top_n_corners)[-top_n_corners:]
+            return sorted(indices_of_largest_values)
         def get_image_corners(image_file):
             """gets given images corner features, this method is writed to suit to thread_this() call
 
@@ -327,13 +332,13 @@ def get_images_dict(method, image_paths, size, scale, verbose=0):
             return get_corner_features(read_and_resize(image_file, size, scale), verbose=verbose-1)
 
         results = thread_this(get_image_corners, image_paths)
-        img_corners_dict = {image_file:results[e] for e, image_file in enumerate(image_paths)}
+        image_corners_dict = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
-        img_mh = MinHash()
-        for (file, corners) in tqdm(list(img_corners_dict.items()), desc="Minhashing features", leave=False):
-            img_mh.update_batch(corners)
-            images[file] = img_mh.copy()
-            img_mh.clear()
+        image_mh = MinHash()
+        for (file, corners) in tqdm(list(image_corners_dict.items()), desc="Minhashing features", leave=False):
+            image_mh.update_batch(corners)
+            image_features[file] = image_mh.copy()
+            image_mh.clear()
 
     elif method == "imagehash":
         def get_image_hash(image_file):
@@ -345,12 +350,12 @@ def get_images_dict(method, image_paths, size, scale, verbose=0):
             Returns:
                 <class 'imagehash.ImageHash'>: hash of given image
             """
-            img = Image.open(image_file)
-            resized_image = img.resize((int(img.size[0] * scale[0]), int(img.size[1] * scale[1])))
+            image = Image.open(image_file)
+            resized_image = image.resize((int(image.size[0] * scale[0]), int(image.size[1] * scale[1])))
             return imagehash.phash(resized_image, hash_size=64, highfreq_factor=16)
         
         results = thread_this(get_image_hash, image_paths)
-        images = {image_file:results[e] for e, image_file in enumerate(image_paths)}
+        image_features = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
     elif method == "ORB":
         orb = cv2.ORB_create()
@@ -367,93 +372,14 @@ def get_images_dict(method, image_paths, size, scale, verbose=0):
             return image_descriptors
 
         results = thread_this(get_image_fetaures, image_paths)
-        images = {image_file:results[e] for e, image_file in enumerate(image_paths)}
+        image_features = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
     elif method == "TM":
-        images = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for TM, may take a while", leave=False)}
+        image_features = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for TM, may take a while", leave=False)}
 
-    return images
+    return image_features
 
-# returns templates and related features dict
-def get_templates_dict(method, template_paths, size, scale, verbose=0):
-    """returns templates and related features dict
-
-    Args:
-        method (str): method to calculate similarity, decides features
-        template_paths (list): list of template file paths
-        size (tuple): dsize parameters for cv2.resize
-        scale (tuple): fx and fy parameters for cv2.resize
-        verbose (int, optional): verbose level. Defaults to 0.
-        
-    Returns:
-        dictionary: dictionary of templates and related features
-    """
-
-    templates = {}
-
-    if method == "SSIM":
-        templates = {template_file:read_and_resize(template_file, size, scale) for template_file in tqdm(template_paths, desc="Reading templates for SSIM, may take a while", leave=False)}
-
-    elif method == "minhash":
-        def get_template_corners(template_file):
-            """gets given templates corner features, this method is writed to suit to thread_this() call
-
-            Args:
-                imatemplate_filege_file (str): name of template file
-
-            Returns:
-                list: list of corner features of given template
-            """
-            return get_corner_features(read_and_resize(template_file, size, scale), verbose=verbose-1)
-
-        results = thread_this(get_template_corners, template_paths)
-        template_corners_dict = {template_file:results[e] for e, template_file in enumerate(template_paths)}
-
-        template_mh = MinHash()
-        for (file, corners) in tqdm(list(template_corners_dict.items()), desc="Minhashing features", leave=False):
-            template_mh.update_batch(corners)
-            templates[file] = template_mh.copy()
-            template_mh.clear()
-
-    elif method == "imagehash":
-        def get_template_hash(template_file):
-            """gets given templates perceptual hash, this method is writed to suit to thread_this() call
-
-            Args:
-                template_file (str): name of template file
-
-            Returns:
-                <class 'imagehash.ImageHash'>: hash of given template
-            """
-            template = Image.open(template_file)
-            resized_template = template.resize((int(template.size[0] * scale[0]), int(template.size[1] * scale[1])))
-            return imagehash.phash(resized_template, hash_size=64, highfreq_factor=16)
-        
-        results = thread_this(get_template_hash, template_paths)
-        templates = {template_file:results[e] for e, template_file in enumerate(template_paths)}
-
-    elif method == "ORB":
-        orb = cv2.ORB_create()
-        def get_template_fetaures(template_file):
-            """gets given templates ORB features, this method is writed to suit to thread_this() call
-
-            Args:
-                template_file (str): name of template file
-
-            Returns:
-                numpy.ndarray: features of image
-            """
-            template_keypoints, template_descriptors = orb.detectAndCompute(read_and_resize(template_file, size, scale), None)
-            return template_descriptors
-
-        results = thread_this(get_template_fetaures, template_paths)
-        templates = {template_file:results[e] for e, template_file in enumerate(template_paths)}
-
-    elif method == "TM":
-        templates = {template_file:read_and_resize(template_file, size, scale) for template_file in tqdm(template_paths, desc="Reading templates for TM, may take a while", leave=False)}
-
-    return templates
-
+# reads and resizes images
 def read_and_resize(path, size=(0,0), scale=(1.0, 1.0), gray=True):
     """reads and resizes image with opencv
 
@@ -471,13 +397,15 @@ def read_and_resize(path, size=(0,0), scale=(1.0, 1.0), gray=True):
     else:
         image = cv2.imread(path)
 
+    # if no output size is provided, scale the image
     if size == (0,0):
         image = cv2.resize(image, dsize=size, fx=scale[0], fy=scale[1])
-    else:
+    else: # if output size is provided resize it
         image = cv2.resize(image, dsize=size)
 
     return image
 
+# generates test image
 def generate_image(character_to_put_on, size=300, x=60, y=240, rand_RGB_value=0, rand_xy_value = 5):
     """function to generate test dataset images
 
@@ -495,8 +423,9 @@ def generate_image(character_to_put_on, size=300, x=60, y=240, rand_RGB_value=0,
     bg = (220 + random.randint(-rand_RGB_value, rand_RGB_value),
           245 + random.randint(-rand_RGB_value, rand_RGB_value),
           245 + random.randint(-rand_RGB_value, rand_RGB_value))
-
     background = np.full((size, size, 3), bg, dtype=np.uint8)
+    
+    # put given character text over background
     background = cv2.putText(background, character_to_put_on,
                              (x + random.randint(-rand_xy_value, rand_xy_value),
                               y + random.randint(-rand_xy_value, rand_xy_value)), 
@@ -504,6 +433,7 @@ def generate_image(character_to_put_on, size=300, x=60, y=240, rand_RGB_value=0,
 
     return background
 
+# generates test dataset
 def generate_test_dataset(path, count):
     """function to generate test dataset
 

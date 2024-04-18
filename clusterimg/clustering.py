@@ -12,11 +12,10 @@ import mplcursors
 from itertools import combinations
 from threading import Lock
 
-from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, save_checkpoint, write_clusters, get_images_dict, get_templates_dict
+from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, save_checkpoint, write_clusters, get_image_features
 from helper_exceptions import *
+from global_variables import GLOBAL_THREADS, GLOBAL_THRESHOLD
 
-global GLOBAL_THRESHOLD
-global GLOBAL_THREADS
 class Clustering():
     def __init__(self, images_folder_path: str, method: str, threshold: float, batch_size: int, num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
         """initializing clustering object
@@ -104,7 +103,7 @@ class Clustering():
         all_image_files = filter(lambda x: os.path.isfile(os.path.join(folder_path, x)), os.listdir(folder_path))
         selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(folder_path, x)).st_size)[:num_of_files]
 
-        image_feature_dict = get_images_dict(method, selected_image_files, folder_path, self.size, self.scale, verbose=verbose-1)
+        image_feature_dict = get_image_features(method, selected_image_files, folder_path, self.size, self.scale, verbose=verbose-1)
         print_verbose("v", "process for interactive threshold selection is started.", verbose)
         if method == "SSIM":
             def get_structural_similarity(image_pair):
@@ -209,7 +208,7 @@ class Clustering():
             return {}
         
         # get image features
-        images = get_images_dict(method, image_paths, self.size, self.scale, verbose=verbose-1)
+        images = get_image_features(method, image_paths, self.size, self.scale, verbose=verbose-1)
 
         comb = list(combinations(image_paths, 2))  # all pair combinations of images
         bools = np.ones((len(image_paths), len(image_paths)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
@@ -282,7 +281,7 @@ class Clustering():
             return {}
 
         # get template features
-        templates = get_templates_dict(self.method, template_paths, self.size, self.scale, verbose=verbose-1)
+        templates = get_image_features(self.method, template_paths, self.size, self.scale, verbose=verbose-1)
 
         # discarding the template combinations that were in the same batch
         batch_cluster_template_list = [file.split(os.sep)[-3:] for file in template_paths]
@@ -430,8 +429,8 @@ class Clustering():
         image_similarities = self.calculate_batch_similarity(batch_idx, image_paths, self.method, verbose=verbose-1)
 
         clusters, clustered_images = cluster(sorted(image_similarities.items(), key=lambda x: x[1], reverse=True), self.clustering_threshold, verbose=verbose-1)
-        outliers = list(set(image_files).difference(set(clustered_images)))
-        write_clusters(clusters, batch_idx, self.images_folder_path, destination_container_folder, outliers, self.transfer, verbose=verbose-1)
+        outliers = list(set(image_paths).difference(set(clustered_images)))
+        write_clusters(clusters, batch_idx, destination_container_folder, outliers, self.transfer, verbose=verbose-1)
         save_checkpoint(batch_idx, destination_container_folder, image_similarities, verbose=verbose-1)
         print("-"*70)
 
