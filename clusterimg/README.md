@@ -14,7 +14,10 @@ TO-TIDY
 - move image reading functions to another file
 - move global variables in another file
 - functionalize multiple codes
+- comment the whole code line by line
+- try to remove images_folder_path complately
 
 TO-FIX
 - fix interactive threshold selection
-- fix image and template files paths, make them full path lists(merge get_image_dict and get_template_dict in one and merge get_corner_features etc)
+- merge get_image_dict and get_template_dict in one and merge get_corner_features, delete unnecessary variables/computations
+- inside of select_threshold function
