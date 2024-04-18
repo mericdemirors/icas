@@ -71,6 +71,39 @@ def cluster(sorted_similarities, clustering_threshold, verbose=0):
 
     return clusters, clustered_images
 
+def similarity_methods(method, images, image1_file, image2_file, verbose=0):
+    """similarity calculation between 2 image for each method
+
+    Args:
+        method (str): similarity method
+        images (dictionary): dictionary of image paths and image feeatues
+        image1_file (str): first images path
+        image2_file (str): second images path
+        verbose (int, optional): verbose level. Defaults to 0.
+
+    Returns:
+        float: similarity value
+    """
+    if method == "SSIM":
+        sim = structural_similarity(images[image1_file], images[image2_file], full=True)[0]
+    
+    elif method == "minhash":
+        sim = images[image1_file].jaccard(images[image2_file])
+    
+    elif method == "imagehash":
+        sim = 1 - (images[image1_file] - images[image2_file]) / len(images[image1_file].hash)
+    
+    elif method == "ORB":
+        matches = bf.match(images[image1_file], images[image2_file])
+        matches = sorted(matches, key=lambda x: x.distance)
+        good_matches = [match for match in matches if match.distance < 0.75 * max(matches, key=lambda x: x.distance).distance]
+        sim = len(good_matches) / len(matches)
+    
+    elif method == "TM":
+        sim = np.float64(np.min(cv2.matchTemplate(images[image1_file], images[image2_file], cv2.TM_SQDIFF_NORMED)))
+
+    return sim
+
 # Calculating similarities of 2 images (needs to be faster, needs to have early stopping)
 def calculate_similarity(
     tpl,
@@ -119,24 +152,7 @@ def calculate_similarity(
     if bools[im1_idx][im2_idx]:
         # trying to calculate similarity
         try:
-            if method == "SSIM":
-                sim = structural_similarity(images[image1_file], images[image2_file], full=True)[0]
-            
-            elif method == "minhash":
-                sim = images[image1_file].jaccard(images[image2_file])
-            
-            elif method == "imagehash":
-                sim = 1 - (images[image1_file] - images[image2_file]) / len(images[image1_file].hash)
-            
-            elif method == "ORB":
-                matches = bf.match(images[image1_file], images[image2_file])
-                matches = sorted(matches, key=lambda x: x.distance)
-                good_matches = [match for match in matches if match.distance < 0.75 * max(matches, key=lambda x: x.distance).distance]
-                sim = len(good_matches) / len(matches)
-            
-            elif method == "TM":
-                sim = np.float64(np.min(cv2.matchTemplate(images[image1_file], images[image2_file], cv2.TM_SQDIFF_NORMED)))
-        
+            similarity_methods(method, images, image1_file, image2_file, verbose=verbose-1)
         except Exception as e:
             sim = -np.inf
             print_verbose("w", "error while similarity calculation(setting image similarity to -np.inf):\n" + str(e), verbose)

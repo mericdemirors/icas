@@ -12,19 +12,19 @@ import mplcursors
 from itertools import combinations
 from threading import Lock
 
-from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, save_checkpoint, image_transfer, write_clusters, get_image_features
+from helper_functions import cluster, similarity_methods, calculate_similarity, print_verbose, thread_this, save_checkpoint, image_transfer, write_clusters, get_image_features
 from helper_exceptions import *
 from global_variables import GLOBAL_THREADS, GLOBAL_THRESHOLD
 
 class Clustering():
-    def __init__(self, images_folder_path: str, method: str, threshold: float, batch_size: int, num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
+    def __init__(self, images_folder_path: str, method: str, batch_size: int, threshold: float=None, num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
         """initializing clustering object
 
         Args:
             images_folder_path (str): folder path of images
             method (str): method to calculate similarity, decides features
-            threshold (float): decides if X and Y are close or not
             batch_size (int): number of images in each process batch
+            threshold (float): decides if X and Y are close or not(if None do interactive threshold selection). Defaults to None
             num_of_threads (int, optional): number of threads to share threaded jobs. Defaults to 2.
             size (tuple, optional): dsize parameters for cv2.resize. Defaults to (0, 0).
             scale (tuple, optional): fx and fy parameters for cv2.resize. Defaults to (1.0, 1.0).
@@ -57,6 +57,9 @@ class Clustering():
             base_folder, images_folder_name = os.path.split(self.images_folder_path)
             self.result_container_folder = os.path.join(base_folder, images_folder_name + "_clustered")
 
+        if self.threshold is None:
+            self.interactive_threshold_selection()
+
     def __str__(self):
         """casting to string method for printing/debugging object attributes
 
@@ -84,85 +87,25 @@ class Clustering():
         if self.transfer not in valid_transfer:
             print_verbose("e", "invalid transfer type", verbose)
 
-    # TODO interactive threshold selection is disabled because of "FigureCanvasAgg is non-interactive, and thus cannot be shown" error"
-    def select_threshold(self, method, folder_path, num_of_files=1000, verbose=0):
+    def interactive_threshold_selection(self, num_of_files=1000, verbose=0):
         """Lets user interactively select threshold
 
         Args:
-            method (str): type of similarity calculation method
-            folder_path (str): path to image folder
             num_of_files (int, optional): how much image should be processed for interactive selection. Defaults to 1000.
             verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
-            None: if method is SSIM(structural_similarity) no interactive selection can be made(takes to much time) so return is used for terminating the function
+            None:
         """
         # sort file names by size
-        all_image_files = filter(lambda x: os.path.isfile(os.path.join(folder_path, x)), os.listdir(folder_path))
-        selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(folder_path, x)).st_size)[:num_of_files]
+        all_image_files = filter(lambda x: os.path.isfile(os.path.join(self.images_folder_path, x)), os.listdir(self.images_folder_path))
+        selected_image_files = sorted(all_image_files, key=lambda x: os.stat(os.path.join(self.images_folder_path, x)).st_size)[:num_of_files]
+        selected_image_files = [os.path.join(self.images_folder_path, file) for file in selected_image_files]
 
-        image_feature_dict = get_image_features(method, selected_image_files, folder_path, self.size, self.scale, verbose=verbose-1)
-        print_verbose("v", "process for interactive threshold selection is started.", verbose)
-        if method == "SSIM":
-            def get_structural_similarity(image_pair):
-                """gets given image pairs structural similarity score, this method is writed to suit to thread_this() call
-
-                Args:
-                    image_pair (tuple): name of pair files
-
-                Returns:
-                    float: structural similarity
-                """
-                return structural_similarity(image_pair[0], image_pair[1], full=True)[0]
-            
-            image_combs = list(combinations(list(image_feature_dict.values()), 2))
-            sim_list = thread_this(get_structural_similarity, image_combs)
-
-        elif method == "minhash":
-            minhashs_combs = list(combinations(list(image_feature_dict.values()), 2))
-            sim_list = [mh1.jaccard(mh2) for (mh1, mh2) in tqdm(minhashs_combs, desc="Calculating minhash similarity", leave=False)]
-
-        elif method == "imagehash":
-            file_combs = list(combinations(list(image_feature_dict.keys()), 2))
-            sim_list = [1 - (image_feature_dict[f1] - image_feature_dict[f2]) / len(image_feature_dict[f1].hash) for (f1, f2) in tqdm(file_combs, desc="Calculating imagehash similarity", leave=False)]
+        images = get_image_features(self.method, selected_image_files, self.size, self.scale, verbose=-1)
+        image_files = list(combinations(selected_image_files, 2))
+        sim_list = [similarity_methods(self.method, images, image_pair[0], image_pair[1], verbose=verbose-1) for image_pair in image_files]
         
-        elif method == "ORB":
-            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-            def orb_calculate_similarity(image_descriptors_and_bf):
-                """calculates similarity over 2 images orb features descriptors
-
-                Args:
-                    image_descriptors_and_bf (list): [img1_descriptors, img2_descriptors]
-
-                Returns:
-                    float: similarity of 2 descriptors
-                """
-                matches = sorted(bf.match(image_descriptors_and_bf[0], image_descriptors_and_bf[1]), key=lambda x: x.distance)
-                good_matches = [match for match in matches if match.distance < 0.75 * matches[-1].distance]
-                similarity = len(good_matches) / len(matches)
-
-                return similarity
-
-            file_combs = list(combinations(list(image_feature_dict.keys()), 2))
-            param_list = [[image_feature_dict[f1], image_feature_dict[f2], bf] for (f1, f2) in file_combs]
-            sim_list = thread_this(orb_calculate_similarity, param_list)
-
-        elif method == "TM":
-            def get_tempate_matching_similarity(image_pair):
-                """gets given image pairs template matching score, this method is writed to suit to thread_this() call
-
-                Args:
-                    image_pair (tuple): name of pair files
-
-                Returns:
-                    float: template matching similarity
-                """
-
-                return np.min(cv2.matchTemplate(image_pair[0], image_pair[1], cv2.TM_SQDIFF_NORMED))        
-            
-            image_combs = list(combinations(list(image_feature_dict.values()), 2))
-            sim_list = thread_this(get_tempate_matching_similarity, image_combs)
-
         def on_hover(sel, lenght = len(selected_image_files)):
             """shows an info text if user hovers over plot
 
@@ -428,7 +371,8 @@ class Clustering():
         outliers = list(set(image_paths).difference(set(clustered_images)))
         write_clusters(clusters, batch_idx, self.result_container_folder, outliers, self.transfer, verbose=verbose-1)
         save_checkpoint(batch_idx, self.result_container_folder, image_similarities, verbose=verbose-1)
-        print("-"*70)
+        if verbose > 0:
+            print("-"*70)
 
     # full process in one function
     def process(self):
