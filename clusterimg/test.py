@@ -9,16 +9,16 @@ test_path = os.path.join(os.path.split(os.path.dirname(os.path.abspath(__file__)
 for method in ["SSIM", "TM", "imagehash", "minhash", "ORB"]:
     for transfer in ["copy", "move"]:
         # generate test dataset
-        generate_test_dataset(test_path, 100)
+        generate_test_dataset(test_path, 50)
 
         # create first Clustering object to cluster but dont merge test images
         clstr1 = Clustering(images_folder_path=test_path, method=method, num_of_threads=8, threshold=0.125,
-                        batch_size=50, overwrite="Y", transfer=transfer, verbose=1, size=(100,100), option="dontmerge")
+                        batch_size=25, overwrite="Y", transfer=transfer, verbose=1, size=(100,100), option="dontmerge")
         clstr1()
 
         # create second Clustering object to merge clustered test images
         clstr2 = Clustering(images_folder_path=test_path + "_clustered", method=method, num_of_threads=8, threshold=0.125,
-                        batch_size=50, overwrite="Y", transfer=transfer, verbose=1, scale=(1,1), option="merge")
+                        batch_size=25, overwrite="Y", transfer=transfer, verbose=1, scale=(1,1), option="merge")
         clstr2()
 
         shutil.rmtree(test_path)
