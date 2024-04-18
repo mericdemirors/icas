@@ -116,7 +116,7 @@ def calculate_similarity(
     img1_file, img2_file = tpl
 
     if bools[im1_idx][im2_idx]:
-        # trying to calculate similarity, if shape mismatch: not similar
+        # trying to calculate similarity
         try:
             if method == "SSIM":
                 sim = structural_similarity(images[img1_file], images[img2_file], full=True)[0]
@@ -213,7 +213,6 @@ def write_clusters(clusters, batch_idx, images_folder_path, destination_containe
         if transfer == "move":
             [shutil.move(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in image_list]
 
-
     # write all non-clustered image into outliers folder
     destination_folder_path = os.path.join(destination_container_folder, "batch_" + str(batch_idx), "outliers")
     os.makedirs(destination_folder_path)
@@ -221,6 +220,8 @@ def write_clusters(clusters, batch_idx, images_folder_path, destination_containe
         [shutil.copy(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
     if transfer == "move":
         [shutil.move(os.path.join(images_folder_path, image_filename), destination_folder_path) for image_filename in outliers]
+
+    print_verbose(batch_idx, str(len(clusters)) + " cluster found", verbose)
 
 # prints verboses in a format
 def print_verbose(verbose_type, message, verbose=0):
@@ -295,12 +296,12 @@ def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=
     return sorted(indices_of_largest_values)
 
 # returns images and related features dict
-def get_images_dict(method, full_path_images, size, scale, verbose=0):
+def get_images_dict(method, image_paths, size, scale, verbose=0):
     """returns images and related features dict
 
     Args:
         method (str): method to calculate similarity, decides features
-        full_path_images (list): list of image file paths
+        image_paths (list): list of image file paths
         size (tuple): dsize parameters for cv2.resize
         scale (tuple): fx and fy parameters for cv2.resize
         verbose (int, optional): verbose level. Defaults to 0.
@@ -311,7 +312,7 @@ def get_images_dict(method, full_path_images, size, scale, verbose=0):
     images = {}
     
     if method == "SSIM":
-        images = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(full_path_images, desc="Reading images for SSIM, may take a while", leave=False)}
+        images = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for SSIM, may take a while", leave=False)}
         
     elif method == "minhash":
         def get_image_corners(image_file):
@@ -325,8 +326,8 @@ def get_images_dict(method, full_path_images, size, scale, verbose=0):
             """
             return get_corner_features(read_and_resize(image_file, size, scale), verbose=verbose-1)
 
-        results = thread_this(get_image_corners, full_path_images)
-        img_corners_dict = {image_file:results[e] for e, image_file in enumerate(full_path_images)}
+        results = thread_this(get_image_corners, image_paths)
+        img_corners_dict = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
         img_mh = MinHash()
         for (file, corners) in tqdm(list(img_corners_dict.items()), desc="Minhashing features", leave=False):
@@ -348,8 +349,8 @@ def get_images_dict(method, full_path_images, size, scale, verbose=0):
             resized_image = img.resize((int(img.size[0] * scale[0]), int(img.size[1] * scale[1])))
             return imagehash.phash(resized_image, hash_size=64, highfreq_factor=16)
         
-        results = thread_this(get_image_hash, full_path_images)
-        images = {image_file:results[e] for e, image_file in enumerate(full_path_images)}
+        results = thread_this(get_image_hash, image_paths)
+        images = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
     elif method == "ORB":
         orb = cv2.ORB_create()
@@ -365,21 +366,21 @@ def get_images_dict(method, full_path_images, size, scale, verbose=0):
             image_keypoints, image_descriptors = orb.detectAndCompute(read_and_resize(image_file, size, scale), None)
             return image_descriptors
 
-        results = thread_this(get_image_fetaures, full_path_images)
-        images = {image_file:results[e] for e, image_file in enumerate(full_path_images)}
+        results = thread_this(get_image_fetaures, image_paths)
+        images = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
     elif method == "TM":
-        images = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(full_path_images, desc="Reading images for TM, may take a while", leave=False)}
+        images = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for TM, may take a while", leave=False)}
 
     return images
 
 # returns templates and related features dict
-def get_templates_dict(method, full_path_templates, size, scale, verbose=0):
+def get_templates_dict(method, template_paths, size, scale, verbose=0):
     """returns templates and related features dict
 
     Args:
         method (str): method to calculate similarity, decides features
-        full_path_templates (list): list of template file paths
+        template_paths (list): list of template file paths
         size (tuple): dsize parameters for cv2.resize
         scale (tuple): fx and fy parameters for cv2.resize
         verbose (int, optional): verbose level. Defaults to 0.
@@ -391,7 +392,7 @@ def get_templates_dict(method, full_path_templates, size, scale, verbose=0):
     templates = {}
 
     if method == "SSIM":
-        templates = {template_file:read_and_resize(template_file, size, scale) for template_file in tqdm(full_path_templates, desc="Reading templates for SSIM, may take a while", leave=False)}
+        templates = {template_file:read_and_resize(template_file, size, scale) for template_file in tqdm(template_paths, desc="Reading templates for SSIM, may take a while", leave=False)}
 
     elif method == "minhash":
         def get_template_corners(template_file):
@@ -405,8 +406,8 @@ def get_templates_dict(method, full_path_templates, size, scale, verbose=0):
             """
             return get_corner_features(read_and_resize(template_file, size, scale), verbose=verbose-1)
 
-        results = thread_this(get_template_corners, full_path_templates)
-        template_corners_dict = {template_file:results[e] for e, template_file in enumerate(full_path_templates)}
+        results = thread_this(get_template_corners, template_paths)
+        template_corners_dict = {template_file:results[e] for e, template_file in enumerate(template_paths)}
 
         template_mh = MinHash()
         for (file, corners) in tqdm(list(template_corners_dict.items()), desc="Minhashing features", leave=False):
@@ -428,8 +429,8 @@ def get_templates_dict(method, full_path_templates, size, scale, verbose=0):
             resized_template = template.resize((int(template.size[0] * scale[0]), int(template.size[1] * scale[1])))
             return imagehash.phash(resized_template, hash_size=64, highfreq_factor=16)
         
-        results = thread_this(get_template_hash, full_path_templates)
-        templates = {template_file:results[e] for e, template_file in enumerate(full_path_templates)}
+        results = thread_this(get_template_hash, template_paths)
+        templates = {template_file:results[e] for e, template_file in enumerate(template_paths)}
 
     elif method == "ORB":
         orb = cv2.ORB_create()
@@ -445,11 +446,11 @@ def get_templates_dict(method, full_path_templates, size, scale, verbose=0):
             template_keypoints, template_descriptors = orb.detectAndCompute(read_and_resize(template_file, size, scale), None)
             return template_descriptors
 
-        results = thread_this(get_template_fetaures, full_path_templates)
-        templates = {template_file:results[e] for e, template_file in enumerate(full_path_templates)}
+        results = thread_this(get_template_fetaures, template_paths)
+        templates = {template_file:results[e] for e, template_file in enumerate(template_paths)}
 
     elif method == "TM":
-        templates = {template_file:read_and_resize(template_file, size, scale) for template_file in tqdm(full_path_templates, desc="Reading templates for TM, may take a while", leave=False)}
+        templates = {template_file:read_and_resize(template_file, size, scale) for template_file in tqdm(template_paths, desc="Reading templates for TM, may take a while", leave=False)}
 
     return templates
 

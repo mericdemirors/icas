@@ -8,6 +8,7 @@ TO-ADD
 - test code
 - openmp
 - C/C++/CUDA optimization
+- Machine and Deep Learning
 
 TO-TIDY
 - move thread functions in another file
@@ -16,6 +17,8 @@ TO-TIDY
 - functionalize multiple codes
 - comment the whole code line by line
 - try to remove images_folder_path complately
+- variable names and full path list computations on outer functions
+- clean the inside of process
 
 TO-FIX
 - fix interactive threshold selection
