@@ -12,7 +12,7 @@ import mplcursors
 from itertools import combinations
 from threading import Lock
 
-from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, save_checkpoint, write_clusters, get_image_features
+from helper_functions import cluster, calculate_similarity, print_verbose, thread_this, save_checkpoint, image_transfer, write_clusters, get_image_features
 from helper_exceptions import *
 from global_variables import GLOBAL_THREADS, GLOBAL_THRESHOLD
 
@@ -490,11 +490,8 @@ class Clustering():
             os.mkdir(cluster_folder_path)
             for template_cluster_folder in template_cluster_folders_to_merge:
                 for file in os.listdir(template_cluster_folder):
-                    if self.transfer == "copy":
-                        shutil.copy(os.path.join(template_cluster_folder, file), os.path.join(cluster_folder_path, file))
-                    if self.transfer == "move":
-                        shutil.move(os.path.join(template_cluster_folder, file), os.path.join(cluster_folder_path, file))
-
+                    image_transfer(self.transfer, os.path.join(template_cluster_folder, file), os.path.join(cluster_folder_path, file))
+                    
         # removing unnecessary files and folders after merging results
         for folder in os.listdir(self.result_container_folder):
             if folder != "results":

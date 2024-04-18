@@ -10,7 +10,6 @@ TO-ADD
 - Machine and Deep Learning
 
 TO-TIDY
-- functionalize multiple codes
 
 TO-FIX
 - fix interactive threshold selection

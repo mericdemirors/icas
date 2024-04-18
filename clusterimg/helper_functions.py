@@ -198,6 +198,20 @@ def load_checkpoint(path, verbose=0):
     loaded = {(k.split(", ")[0][2:-1], k.split(", ")[1][1:-2]):v for (k,v) in loaded_dict.items()}
     return loaded
 
+def image_transfer(transfer, source_path, destination_path):
+    """encapsulation of image transfering
+
+    Args:
+        transfer (str): type of transfer
+        source_path (str): source path
+        destination_path (str): destination path
+    """
+    if transfer == "copy":
+        shutil.copy(source_path, destination_path)
+    if transfer == "move":
+        shutil.move(source_path, destination_path)
+
+
 # writes clusters into destination
 def write_clusters(clusters, batch_idx, destination_container_folder, outliers, transfer, verbose=0):
     """writes image clusters to a folder
@@ -215,18 +229,13 @@ def write_clusters(clusters, batch_idx, destination_container_folder, outliers, 
         destination_folder_path = os.path.join(destination_container_folder, "batch_" + str(batch_idx), "cluster_" + str(i))
 
         os.makedirs(destination_folder_path)
-        if transfer == "copy":
-            [shutil.copy(image_filename, destination_folder_path) for image_filename in image_list]
-        if transfer == "move":
-            [shutil.move(image_filename, destination_folder_path) for image_filename in image_list]
+        [image_transfer(transfer, image_filename, destination_folder_path) for image_filename in image_list]
 
     # write all non-clustered image into outliers folder
     destination_folder_path = os.path.join(destination_container_folder, "batch_" + str(batch_idx), "outliers")
     os.makedirs(destination_folder_path)
-    if transfer == "copy":
-        [shutil.copy(image_filename, destination_folder_path) for image_filename in outliers]
-    if transfer == "move":
-        [shutil.move(image_filename, destination_folder_path) for image_filename in outliers]
+        
+    [image_transfer(transfer, image_filename, destination_folder_path) for image_filename in outliers]
 
     print_verbose(batch_idx, str(len(clusters)) + " cluster found", verbose)
 
