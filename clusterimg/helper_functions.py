@@ -132,7 +132,8 @@ def calculate_similarity(
             elif method == "TM":
                 sim = np.float64(np.min(cv2.matchTemplate(images[img1_file], images[img2_file], cv2.TM_SQDIFF_NORMED)))
         except Exception as e:
-            print_verbose("e", "error while similarity calculation: " + str(e), verbose)
+            sim = -np.inf
+            print_verbose("w", "error while similarity calculation(setting image similarity to -np.inf):\n" + str(e), verbose)
 
         if sim > similarity_threshold:
             lock.acquire()
@@ -239,6 +240,8 @@ def print_verbose(verbose_type, message, verbose=0):
         output = output + "[verbose]  | " + message
     elif verbose_type == "m":
         output = output + "[merge]    | " + message
+    elif verbose_type == "w":
+        output = output + "[warning]  | " + message
     elif verbose_type == "f":
         output = output + "[finish]   | " + message
         raise(FinishException(output))
@@ -476,24 +479,29 @@ def read_and_resize(path, size=(0,0), scale=(1.0, 1.0), gray=True):
 
     return image
 
-def generate_image(character_to_put_on, size=100, x=30, y=70, rand_RGB_value=20, rand_xy_value = 5):
+def generate_image(character_to_put_on, size=300, x=60, y=240, rand_RGB_value=0, rand_xy_value = 5):
     """function to generate test dataset images
 
     Args:
         character_to_put_on (str): character to write on image
-        size (int, optional): size of image. Defaults to 100.
-        x (int, optional): x coordinate of character. Defaults to 30.
-        y (int, optional): y coordinate of character. Defaults to 70.
-        rand_RGB_value (int, optional): random RGB shift. Defaults to 20.
+        size (int, optional): size of image. Defaults to 300.
+        x (int, optional): x coordinate of character. Defaults to 60.
+        y (int, optional): y coordinate of character. Defaults to 240.
+        rand_RGB_value (int, optional): random RGB shift. Defaults to 0.
         rand_xy_value (int, optional): random coordinate shift. Defaults to 5.
 
     Returns:
         numpy.ndarray: prepared image
     """
-    bg = (220 + random.randint(-rand_RGB_value, rand_RGB_value), 245 + random.randint(-rand_RGB_value, rand_RGB_value), 245 + random.randint(-rand_RGB_value, rand_RGB_value))
+    bg = (220 + random.randint(-rand_RGB_value, rand_RGB_value),
+          245 + random.randint(-rand_RGB_value, rand_RGB_value),
+          245 + random.randint(-rand_RGB_value, rand_RGB_value))
 
     background = np.full((size, size, 3), bg, dtype=np.uint8)
-    background = cv2.putText(background, character_to_put_on, (x + random.randint(-rand_xy_value, rand_xy_value), y + random.randint(-rand_xy_value, rand_xy_value)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,0), 4, cv2.LINE_AA) 
+    background = cv2.putText(background, character_to_put_on,
+                             (x + random.randint(-rand_xy_value, rand_xy_value),
+                              y + random.randint(-rand_xy_value, rand_xy_value)), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 9, (0,0,0), 45, cv2.LINE_AA) 
 
     return background
 
