@@ -3,6 +3,8 @@ import time
 import numpy as np
 from skimage.morphology import flood_fill, flood
 
+from helper_exceptions import *
+
 def edge_segmentation(img_path):
     """segments image with opencv canny edge detection
 
@@ -43,13 +45,13 @@ def edge_segmentation(img_path):
             edge_img[x:x+ke.shape[0], y:y+ke.shape[1]] = 0
 
     edge_img = edge_img.astype(np.int16)
-    edge_img[edge_img == 255] = -1 # now -1 means edge (needed for clustering backgrounds)
+    edge_img[edge_img == 255] = -1 # now -1 means edge (needed for segmenting backgrounds)
 
-    cluster_id = 1
-    cluster_pixels = np.where(edge_img == 0)
+    segment_id = 1
+    segment_pixels = np.where(edge_img == 0)
 
-    while len(cluster_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled cluster
-        ri, ci = cluster_pixels[0][0], cluster_pixels[1][0] # get a cluster pixel
+    while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
+        ri, ci = segment_pixels[0][0], cluster_pixels[1][0] # get a cluster pixel
         
         edge_img = flood_fill(edge_img, (ri, ci), cluster_id, connectivity=1, in_place=True) # floodfill cluster
         extracted_cluster = np.array(edge_img == edge_img[ri][ci]).astype(np.int16) # extract only cluster as binary
@@ -106,7 +108,7 @@ def kmeans_segmentation(img_path, k, color_importance):
     xy_img = np.array([[r,c] for r in range(num_of_rows) for c in range(num_of_columns)]).reshape((img_to_process.shape[0], img_to_process.shape[1], 2)) / color_importance
     pixel_data = np.concatenate([img_to_process, xy_img], axis=2)    
 
-    # Convert the img to the required format for K-means (flatten to 2D array), pixels are represented as: [X, Y, *COLOR_VALUE]
+    # Convert the img to the required format for K-means (flatten to 2D array), pixels are represented as: [X, Y, COLOR_VALUES]
     if img_to_process.shape[-1] == 3:
         pixels = pixel_data.reshape((-1, 5))
     else:
@@ -124,7 +126,7 @@ def kmeans_segmentation(img_path, k, color_importance):
 
     return labels
 
-def cluster_image(method, img_path="", region_size=40, ruler=30, k=15, color_importance=5):
+def segment_image(method, img_path="", region_size=40, ruler=30, k=15, color_importance=5):
     """segments image with selected segmentation process
 
     Args:
@@ -136,51 +138,47 @@ def cluster_image(method, img_path="", region_size=40, ruler=30, k=15, color_imp
         color_importance (int, optional): importance of pixel colors proportional to pixels coordinates: _description_. Defaults to 5.
 
     Returns:
-        numpy.ndarray: segmented image
+        numpy.ndarray: segmented image, segment ids start from 1, edges between segments are 0 if exist
     """
     if method == "edge":
-        # print("Edge method is not working right at the moment, please use other ones", 6/0)
         result_img = edge_segmentation(img_path)
     elif method == "superpixel":
         result_img = superpixel_segmentation(img_path, region_size=region_size, ruler=ruler)
     elif method == "kmeans":
         result_img = kmeans_segmentation(img_path, k=k, color_importance=color_importance)
 
-    # result image format:
-    # if image has edges between clusters: 0 means edge
-    # cluster ids start from 1 and increment by 1
     return result_img
 
-def fill(result_img, clustered_img, painted_pixels, click_row, click_column, color):
-    """fills cluster that selected pixel belongs in result image according to clustered_image and painted_pixels
+def fill(result_img, segmented_img, painted_pixels, click_row, click_column, color):
+    """fills segment that selected pixel belongs in result image according to segmented_image and painted_pixels
 
     Args:
         result_img (numpy.ndarray): image to fill
-        clustered_img (numpy.ndarray): processed segments of result_img
+        segmented_img (numpy.ndarray): processed segments of result_img
         painted_pixels (numpy.ndarray): numpy matrix same size as result_img that indicates which pixels are filled
         click_row (int): row index of selected pixel
         click_column (int): column index of selected pixel
         color (list): BGR values of color that is being filled
     """
-    # get selected cluster pixels on all layers at image being segmented
+    # get selected segment pixels on all layers at image being segmented
     if painted_pixels[click_row, click_column] == 1: # if this pixel is previously painted, so we should overpaint it on the result image
-        selected_cluster_B = flood(result_img[:,:,0], (click_row, click_column), connectivity=1).astype(np.uint8)
-        selected_cluster_G = flood(result_img[:,:,1], (click_row, click_column), connectivity=1).astype(np.uint8)
-        selected_cluster_R = flood(result_img[:,:,2], (click_row, click_column), connectivity=1).astype(np.uint8)
-        selected_cluster = np.logical_and(selected_cluster_B, selected_cluster_G, selected_cluster_R)
-    else: # get selected cluster pixels on clustered image
-        selected_cluster = flood(clustered_img, (click_row, click_column), connectivity=1).astype(np.uint8)
+        selected_segment_B = flood(result_img[:,:,0], (click_row, click_column), connectivity=1).astype(np.uint8)
+        selected_segment_G = flood(result_img[:,:,1], (click_row, click_column), connectivity=1).astype(np.uint8)
+        selected_segment_R = flood(result_img[:,:,2], (click_row, click_column), connectivity=1).astype(np.uint8)
+        selected_segment = np.logical_and(selected_segment_B, selected_segment_G, selected_segment_R)
+    else: # get selected segment pixels on segmented image
+        selected_segment = flood(segmented_img, (click_row, click_column), connectivity=1).astype(np.uint8)
 
-    # segment cluster
-    result_img[:,:,0][selected_cluster==1] = color[0]
-    result_img[:,:,1][selected_cluster==1] = color[1]
-    result_img[:,:,2][selected_cluster==1] = color[2]
+    # fill segment
+    result_img[:,:,0][selected_segment==1] = color[0]
+    result_img[:,:,1][selected_segment==1] = color[1]
+    result_img[:,:,2][selected_segment==1] = color[2]
     
     # mark as painted
-    painted_pixels[selected_cluster==1] = 1
+    painted_pixels[selected_segment==1] = 1
 
 def unfill(result_img, painted_pixels, raw_img, click_row, click_column):
-    """unfills cluster that selected pixel belongs in result image according to clustered_image and painted_pixels
+    """unfills segment that selected pixel belongs in result image according to segmented_image and painted_pixels
 
     Args:
         result_img (numpy.ndarray): image to unfill
@@ -189,21 +187,19 @@ def unfill(result_img, painted_pixels, raw_img, click_row, click_column):
         click_row (int): row index of selected pixel
         click_column (int): column index of selected pixel
     """
-    # get selected cluster pixels on all layers at image being segmented
-    selected_cluster_B = flood(result_img[:,:,0], (click_row, click_column), connectivity=1).astype(np.uint8)
-    selected_cluster_G = flood(result_img[:,:,1], (click_row, click_column), connectivity=1).astype(np.uint8)
-    selected_cluster_R = flood(result_img[:,:,2], (click_row, click_column), connectivity=1).astype(np.uint8)
+    # get selected segment pixels on all layers at image being segmented
+    selected_segment_B = flood(result_img[:,:,0], (click_row, click_column), connectivity=1).astype(np.uint8)
+    selected_segment_G = flood(result_img[:,:,1], (click_row, click_column), connectivity=1).astype(np.uint8)
+    selected_segment_R = flood(result_img[:,:,2], (click_row, click_column), connectivity=1).astype(np.uint8)
+    selected_segment = np.logical_and(selected_segment_B, selected_segment_G, selected_segment_R)
 
-    # get precise cluster
-    selected_cluster = np.logical_and(selected_cluster_B, selected_cluster_G, selected_cluster_R)
-
-    # undo segmenting
-    result_img[:,:,0][selected_cluster==1] = raw_img[:,:,0][selected_cluster==1]
-    result_img[:,:,1][selected_cluster==1] = raw_img[:,:,1][selected_cluster==1]
-    result_img[:,:,2][selected_cluster==1] = raw_img[:,:,2][selected_cluster==1]
+    # unfill segmenting
+    result_img[:,:,0][selected_segment==1] = raw_img[:,:,0][selected_segment==1]
+    result_img[:,:,1][selected_segment==1] = raw_img[:,:,1][selected_segment==1]
+    result_img[:,:,2][selected_segment==1] = raw_img[:,:,2][selected_segment==1]
     
     # mark as not painted
-    painted_pixels[selected_cluster==1] = 0
+    painted_pixels[selected_segment==1] = 0
 
 def print_verbose(verbose_type, message):
     """Prints verbose messages
@@ -224,11 +220,10 @@ def print_verbose(verbose_type, message):
     elif verbose_type == "r":
         output = output + "[reset] | " + message
     elif verbose_type == "e":
-        output = output + "[error] | " + message
-        print(output)
-        exit(0)
+        output = output + "[error]    | " + message
+        raise(ErrorException(output))
     else:
-        print("wrong output verbose type")
-        exit(0)
+        output = output + "[wrong vt] | wrong verbose type"
+        raise(WrongTypeException(output))
 
     print(output)

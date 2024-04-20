@@ -122,11 +122,11 @@ def process_image(files, file_no, method, region_size, ruler, k, color_importanc
         color_importance (int): importance of pixel colors proportional to pixels coordinates
     """
     global thread_range, thread_stop, segmented_img_dict
+    if thread_stop:
+        return
+
     # iterate at surrounding images of current image
     for file_no in range(max(file_no-thread_range, 0), min(file_no+thread_range, len(files))):
-        if thread_stop:
-                return
-
         img_path = os.path.join(img_folder, files[file_no])
         
         # add key to dict to prevent upcoming threads to process same image while it is already being processed
@@ -139,7 +139,7 @@ def process_image(files, file_no, method, region_size, ruler, k, color_importanc
         if segmented_img_dict[img_path] is None: 
             # if iterated image is not processed add it to dictionary
             raw_img = cv2.imread(img_path)
-            clustered_img = cluster_image(method=method, img_path=img_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
+            clustered_img = segment_image(method=method, img_path=img_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
             segmented_img_dict[img_path] = (raw_img, clustered_img)
         lock.release()
 
@@ -160,8 +160,8 @@ def start_thread_func(files, file_no, method, region_size, ruler, k, color_impor
     """
     thread = threading.Thread(target=process_image, args=(files, file_no, method, region_size, ruler, k, color_importance), daemon=True)
     thread.start()
+    print("Thread", thread, "started", file_no)
     return thread
-
 
 def segment(raw_img, clustered_img, result_img, save_folder, image_name, image_no, color_picker_img):
     """segments given image and saves it to output folder
@@ -340,11 +340,11 @@ def start_segmenting(img_folder, save_folder, method, region_size=40, ruler=30, 
     time.sleep(1)
 
 
-if __name__ == "__main__":
+try:
     img_folder="/home/mericdemirors/Pictures/titles"
     save_folder="/home/mericdemirors/Pictures/titles_seg"
     method="s" # input("method to segmentate images(s:superpixel, km:kmeans, e:edge): ")
-    
+
     method_dict = {"s":"superpixel", "km":"kmeans", "e":"edge"}
     method = method_dict[method]
 
@@ -353,3 +353,9 @@ if __name__ == "__main__":
     start_segmenting(img_folder, save_folder, method, color_picker_path=cp_path)
 
     cv2.destroyAllWindows()
+except ErrorException as ee:
+    print(ee.message)
+    exit(ee.error_code)
+except WrongTypeException as wte:
+    print(wte.message)
+    exit(wte.error_code)
