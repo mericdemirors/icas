@@ -20,6 +20,8 @@ class Segmentating:
             verbose (int, optional): verbose level. Defaults to 0.
         """
         self.image_folder = image_folder
+        self.files = sorted([os.path.join(self.image_folder, file) for file in os.listdir(self.image_folder)])
+
         self.method = method
         self.verbose = verbose
 
@@ -28,13 +30,21 @@ class Segmentating:
         self.k = k
         self.color_importance = color_importance
 
-        print(color_picker_image_path)
+        self.raw_image = None
+        self.result_image = None
+        self.segmented_image = None
+        self.painted_pixels = None
+        self.orig_raw_image = None
+        self.orig_result_image = None
+        self.orig_segmented_image = None
+        self.orig_painted_pixels = None
+
         self.color_picker_image = cv2.imread(color_picker_image_path)
         if self.color_picker_image is None:
             print_verbose("e", "No color picking image passed", verbose=verbose-1)
 
         base_folder, images_folder_name = os.path.split(self.image_folder)
-        self.save_folder = os.path.join(base_folder, images_folder_name + "_clustered")
+        self.save_folder = os.path.join(base_folder, images_folder_name + "_segmented")
 
         self.segmented_image_dict = {} # distionary to save thread processing results
         self.thread_range = thread_range # number of images to prepare at both left and right side of current index
@@ -138,44 +148,10 @@ class Segmentating:
 
         cv2.imshow("Color Picker", color_picker_image_display)
 
-    def pass_image_to_thread(self, files, file_no, region_size, ruler, k, color_importance, verbose=0):
-        """Function to process segment images with thread
-
-        Args:
-            files (list): list of files
-            file_no (int): index of current image
-            region_size (int): region_size parameter for superpixel
-            ruler (int): ruler parameter for superpixel
-            k (int): k parameter for opencv kmeans
-            color_importance (int): importance of pixel colors proportional to pixels coordinates
-            verbose (int, optional): verbose level. Defaults to 0.
-        """
-        if self.thread_stop:
-            return
-
-        # iterate at surrounding images of current image
-        for file_no in range(max(file_no-self.thread_range, 0), min(file_no+self.thread_range, len(files))):
-            image_path = os.path.join(self.image_folder, files[file_no])
-            
-            # add key to dict to prevent upcoming threads to process same image while it is already being processed
-            lock.acquire()
-            if image_path not in self.segmented_image_dict.keys(): 
-                self.segmented_image_dict[image_path] = None
-            lock.release()
-
-            # if image is not processed yet, process it and add to dictionary
-            lock.acquire()
-            if self.segmented_image_dict[image_path] is None: 
-                raw_image = cv2.imread(image_path)
-                segmented_image = segment_image(method=self.method, image_path=image_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
-                self.segmented_image_dict[image_path] = (raw_image, segmented_image)
-            lock.release()
-
-    def create_thread(self, files, file_no, region_size, ruler, k, color_importance, verbose=0):
+    def create_thread(self, file_no, region_size, ruler, k, color_importance, verbose=0):
         """function to start thread processing and return thread
 
         Args:
-            files (list): list of files
             file_no (int): index of current image
             region_size (int): region_size parameter for superpixel
             ruler (int): ruler parameter for superpixel
@@ -186,7 +162,40 @@ class Segmentating:
         Returns:
             threading.Thread: thread that is created for processing
         """
-        thread = threading.Thread(target=self.pass_image_to_thread, args=(files, file_no, region_size, ruler, k, color_importance, verbose-1), daemon=True)
+
+        def pass_image_to_thread(file_no, region_size, ruler, k, color_importance, verbose=0):
+            """Function to process segment images with thread
+
+            Args:
+                file_no (int): index of current image
+                region_size (int): region_size parameter for superpixel
+                ruler (int): ruler parameter for superpixel
+                k (int): k parameter for opencv kmeans
+                color_importance (int): importance of pixel colors proportional to pixels coordinates
+                verbose (int, optional): verbose level. Defaults to 0.
+            """
+            if self.thread_stop:
+                return
+
+            # iterate at surrounding images of current image
+            for file_no in range(max(file_no-self.thread_range, 0), min(file_no+self.thread_range, len(self.files))):
+                image_path = os.path.join(self.image_folder, self.files[file_no])
+                
+                # add key to dict to prevent upcoming threads to process same image while it is already being processed
+                lock.acquire()
+                if image_path not in self.segmented_image_dict.keys(): 
+                    self.segmented_image_dict[image_path] = None
+                lock.release()
+
+                # if image is not processed yet, process it and add to dictionary
+                lock.acquire()
+                if self.segmented_image_dict[image_path] is None: 
+                    raw_image = cv2.imread(image_path)
+                    segmented_image = segment_image(method=self.method, image_path=image_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
+                    self.segmented_image_dict[image_path] = (raw_image, segmented_image)
+                lock.release()
+
+        thread = threading.Thread(target=pass_image_to_thread, args=(file_no, region_size, ruler, k, color_importance, verbose-1), daemon=True)
         thread.start()
         return thread
 
@@ -199,7 +208,7 @@ class Segmentating:
             result_image (numpy.ndarray): segmented image
             verbose (int, optional): verbose level. Defaults to 0.
         """
-        segment_colors = np.unique(result_image[np.where(painted_pixels == 1)], axis=0)
+        segment_colors = np.unique(result_image[np.where(self.painted_pixels == 1)], axis=0)
         # for each unique color save a mask coded with its BGR value
         for color in segment_colors:
             indices = np.argwhere(np.all(result_image == color, axis=-1))
@@ -207,15 +216,15 @@ class Segmentating:
             mask[indices[:, 0], indices[:, 1]] = [255,255,255]
             cv2.imwrite(mask_path + str(color) + ".png", mask)
 
-    def process_key(self, raw_image, segmented_image, result_image, image_name, image_no, ctrl_z_stack, previous_result_image, painted_pixels, previous_painted_pixels, key, verbose=0):
+    def process_key(self, file_no, ctrl_z_stack, key, verbose=0):
         """processes keyboard inputs
 
         Args:
             raw_image (numpy.ndarray): nonprocessed image
+            orig_segmented_image (numpy.ndarray): original pre-segmented image
             segmented_image (numpy.ndarray): pre-segmented image
             result_image (numpy.ndarray): processing image
-            image_name (str): image file name
-            image_no (int): image file number
+            file_no (int): image file number
             ctrl_z_stack (list): list of last actions for reverse
             previous_result_image (numpy.ndarray): previous processing image state
             painted_pixels (numpy.ndarray): contains which pixels are segmented
@@ -226,6 +235,7 @@ class Segmentating:
         Returns:
             str: what action is taken
         """
+        image_name = os.path.split(self.files[file_no])[1]
         if key == ord('q'): # quit
             print_verbose("q", "ending_session, waiting for threads...", verbose=verbose-1)
             return "quit"
@@ -237,18 +247,20 @@ class Segmentating:
             return "previous"
         elif key == ord('s'): # save
             print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
-            self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), painted_pixels, result_image, verbose=verbose-1)
+            self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), self.painted_pixels, self.result_image, verbose=verbose-1)
             return "save"
         elif key == ord('z'): # ctrl + z last action
-            if len(ctrl_z_stack) > 0:
-                result_image, painted_pixels = ctrl_z_stack.pop()
-                cv2.imshow("Processed Image " + str(image_no), result_image)
+            pass
+            # if len(ctrl_z_stack) > 0:
+            #     result_image, painted_pixels = ctrl_z_stack.pop()
+            #     cv2.imshow("Processed Image " + str(file_no), result_image)
         elif key == ord('r'): # reset all actions
             print_verbose("r", "reseting image " + image_name, verbose=verbose-1)
-            ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy()))
-            result_image = raw_image.copy()
-            painted_pixels=np.zeros_like(segmented_image)
-            cv2.imshow("Processed Image " + str(image_no), result_image)
+            # ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy()))
+            self.raw_image = self.orig_raw_image.copy()
+            self.result_image = self.orig_result_image.copy()
+            self.segmented_image = self.orig_segmented_image.copy()
+            self.painted_pixels = self.orig_painted_pixels.copy()
 
     def process_color(self, color_info, previous_color):
         """selects color
@@ -269,14 +281,14 @@ class Segmentating:
         else:
             return previous_color
 
-    def process_action(self, raw_image, segmented_image, result_image, image_no, ctrl_z_stack, painted_pixels, color, callback_info):
+    def process_action(self, file_no, ctrl_z_stack, color, callback_info):
         """processes taken action
 
         Args:
             raw_image (numpy.ndarray): nonprocessed image
             segmented_image (numpy.ndarray): pre-segmented image
             result_image (numpy.ndarray): processing image
-            image_no (int): file number of image
+            file_no (int): file number of image
             ctrl_z_stack (list): list of changes in case of reversing
             painted_pixels (numpy.ndarray): contains which pixels are segmented
             color (list): values of selected color
@@ -289,94 +301,82 @@ class Segmentating:
             click_column = callback_info['x']
             click_row = callback_info['y']
             
-            previous_result_image, previous_painted_pixels = result_image.copy(), painted_pixels.copy()
-
             if callback_info["continuous_filling"]:                
-                fill(result_image, segmented_image, painted_pixels, click_row, click_column, color)
+                fill(self.result_image, self.segmented_image, self.painted_pixels, click_row, click_column, color)
             
             elif callback_info["continuous_unfilling"]:
-                unfill(result_image, painted_pixels, raw_image, click_row, click_column)
+                unfill(self.result_image, self.painted_pixels, self.raw_image, click_row, click_column)
 
-            if np.any(np.equal(previous_result_image, result_image) == False): # means there is a change while continuously filling
-                ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy()))
-                cv2.imshow("Processed Image " + str(image_no), result_image)
-
-            return previous_result_image, previous_painted_pixels
+            #if np.any(np.equal(previous_result_image, self.result_image) == False): # means there is a change while continuously filling
+                #pass
+                # ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy()))
 
         if callback_info['clicked']: # if a clicking action detected
             callback_info["clicked"] = False
             click_column = callback_info['x']
             click_row = callback_info['y']
 
-            ctrl_z_stack.append((result_image.copy(), painted_pixels.copy()))
+            # ctrl_z_stack.append((result_image.copy(), painted_pixels.copy()))
 
             if callback_info["action"] == "fill": # fill the thing at pos: [click_row, click_column]
-                fill(result_image, segmented_image, painted_pixels, click_row, click_column, color)
+                fill(self.result_image, self.segmented_image, self.painted_pixels, click_row, click_column, color)
                 
             elif callback_info["action"] == "unfill": # unfill the thing at pos: [click_row, click_column]
-                unfill(result_image, painted_pixels, raw_image, click_row, click_column)
+                unfill(self.result_image, self.painted_pixels, self.raw_image, click_row, click_column)
                 
             elif callback_info["action"] == "cut": # cut the segments with a line
                 if callback_info["first_cut"] != None and callback_info["second_cut"] != None:
-                    line_image = np.zeros_like(result_image) # image to cut segment
+                    line_image = np.zeros_like(self.result_image) # image to cut segment
                     cv2.line(line_image, callback_info["first_cut"] , callback_info["second_cut"], (255,255,255), 1) 
-                    result_image[line_image==255] = raw_image[line_image==255]
-                    segmented_image[line_image[:,:,0]==255] = 0
-                    painted_pixels[line_image[:,:,0]==255] = 0
+                    self.result_image[line_image==255] = self.raw_image[line_image==255]
+                    self.segmented_image[line_image[:,:,0]==255] = 0
+                    self.painted_pixels[line_image[:,:,0]==255] = 0
 
-            cv2.imshow("Processed Image " + str(image_no), result_image)
+        cv2.imshow("Processed Image " + str(file_no), self.result_image)
 
-        return None, None
-
-    def segment(self, raw_image, segmented_image, result_image, image_name, image_no, verbose=0):
+    def segment(self, file_no, verbose=0):
         """segments given image and saves it to output folder
 
         Args:
             raw_image (numpy.ndarray): non-processed image
             segmented_image (numpy.ndarray): segmented image
             result_image (numpy.ndarray): image that is being processed
-            image_name (str): file name of image
-            image_no (int), index of current file
+            file_no (int), index of current file
             verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
             str: information for upper function about actions that it needs to take
         """
-
+        self.result_image = self.raw_image.copy()
         # set windows and mouse event listeners for windows
-        cv2.namedWindow("Processed Image " + str(image_no), flags = cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-        cv2.imshow("Processed Image " + str(image_no), result_image)
+        cv2.namedWindow("Processed Image " + str(file_no), flags = cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
+        cv2.imshow("Processed Image " + str(file_no), self.result_image)
         
         cv2.namedWindow("Color Picker", flags = cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.imshow("Color Picker", self.color_picker_image)
 
         callback_info = {'clicked': False, 'x': -1, 'y': -1, 'action':"", "first_cut":None, "second_cut":None, 'continuous_filling': False, 'continuous_unfilling': False}
-        cv2.setMouseCallback("Processed Image " + str(image_no), self.processed_image_callbacks, callback_info)
+        cv2.setMouseCallback("Processed Image " + str(file_no), self.processed_image_callbacks, callback_info)
 
         color_info = {'clicked': False, 'x': -1, 'y': -1}
         cv2.setMouseCallback("Color Picker", self.color_callback, color_info)
 
-        painted_pixels=np.zeros_like(segmented_image) # pixels that are segmented
         ctrl_z_stack = [] # stack for reversing actions
         color = [0,0,0] # BGR values
         previous_color = color
-        previous_result_image = result_image.copy()
-        previous_painted_pixels = painted_pixels.copy()
 
         while True:
             key = cv2.waitKey(1)
             self.color_picker_feedback(callback_info, color_info)
 
-            action = self.process_key(raw_image, segmented_image, result_image, image_name, image_no, ctrl_z_stack, previous_result_image, painted_pixels, previous_painted_pixels, key, verbose=0)
+            action = self.process_key(file_no, ctrl_z_stack, key, verbose=0)
             if action:
                 return action
 
             previous_color = color
             color = self.process_color(color_info, previous_color)
 
-            prev1, prev2 = self.process_action(raw_image, segmented_image, result_image, image_no, ctrl_z_stack, painted_pixels, color, callback_info)
-            if prev1 is not None and prev2 is not None:
-                previous_result_image, previous_painted_pixels = prev1, prev2
+            self.process_action(file_no, ctrl_z_stack, color, callback_info)
 
     def process(self, region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
         """function to segment images in a folder in order and save them to output folder
@@ -388,30 +388,32 @@ class Segmentating:
             color_importance (int, optional): color importance parameter for cv2 kmeans. Defaults to 5.
             verbose (int, optional): verbose level. Defaults to 0.
         """
-        os.makedirs(self.save_folder, exist_ok=True)
-        files = sorted(os.listdir(self.image_folder))
-
         file_no = 0
         threads = {}
-        while 0 <= file_no < len(files):
-            
-            # if file is already processed and far passed join its thread
-            for file_no_keys in threads.keys():
-                if abs(file_no_keys - file_no_keys) > self.thread_range:
-                    threads[file_no_keys].join()
-            
-            file_name = files[file_no]
-            image_path = os.path.join(self.image_folder, file_name)
+        while 0 <= file_no < len(self.files):
+            image_path = self.files[file_no]
 
             # if file is not processed yet, start a process for it
             if file_no not in threads.keys():
-                thread = self.create_thread(files, file_no, region_size, ruler, k, color_importance, verbose=verbose-1)
+                thread = self.create_thread(file_no, region_size, ruler, k, color_importance, verbose=verbose-1)
                 threads[file_no] = thread
 
             # if files process is done start segmenting it
             if image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None:
-                raw_image, segmented_image = self.segmented_image_dict[image_path]
-                return_code = self.segment(raw_image, segmented_image, raw_image.copy(), file_name, file_no, verbose=verbose-1)
+                raw_image, orig_segmented_image = self.segmented_image_dict[image_path]                
+                if self.raw_image is None:
+                    self.raw_image = raw_image.copy()
+                    self.orig_raw_image = raw_image.copy()
+                if self.result_image is None:
+                    self.result_image = raw_image.copy()
+                    self.orig_result_image = raw_image.copy()
+                if self.segmented_image is None:
+                    self.segmented_image = orig_segmented_image.copy()
+                    self.orig_segmented_image = orig_segmented_image.copy()
+                if self.painted_pixels is None:
+                    self.painted_pixels = np.zeros(self.segmented_image.shape)
+                    self.orig_painted_pixels = np.zeros(self.segmented_image.shape)
+                return_code = self.segment(file_no, verbose=verbose-1)
 
                 cv2.destroyWindow("Processed Image " + str(file_no))
                 
@@ -431,6 +433,7 @@ class Segmentating:
         """calling the object will start the main process and catch any possible exception during
         """
         try:
+            os.makedirs(self.save_folder, exist_ok=True)
             self.process(self.region_size, self.ruler, self.k, self.color_importance, verbose=self.verbose-1)
         except ErrorException as ee:
             print(ee.message)

@@ -14,7 +14,11 @@ TO-TRY
 TO-TIDY
 - fonksiyonlara böl
 - check thread processing efficiency
-- self.full_path_images attribure
 
 TO-FIX
 - add z stack if there is change
+- add ctrl z stack back
+- functionalize image attribute inits and restarts(self.raw_image = None etc)
+- restart image attributes after n and p keys
+- function parameters
+- optimize imshows
