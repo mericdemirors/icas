@@ -148,6 +148,7 @@ def calculate_similarity(
     now = datetime.datetime.now()
 
     image1_file, image2_file = tpl
+    sim = similarity_methods(method, images, image1_file, image2_file, verbose=verbose-1)
 
     if bools[im1_idx][im2_idx]:
         # trying to calculate similarity
@@ -343,8 +344,13 @@ def get_image_features(method, image_paths, size, scale, verbose=0):
             corners = cv2.cornerHarris(gray_image, blockSize, ksize, k)
             flattened_corners = corners.flatten()
 
-            indices_of_largest_values = np.argpartition(flattened_corners, -top_n_corners)[-top_n_corners:]
-            return sorted(indices_of_largest_values)
+            largest_corner_indices = np.argpartition(flattened_corners, max(-top_n_corners, len(flattened_corners)-1))[-top_n_corners:]
+            corner_rows, corner_cols = np.unravel_index(largest_corner_indices, corners.shape)
+            corner_rows = np.concatenate((sorted(corner_rows), np.zeros(100 - len(corner_rows))))/corners.shape[0]
+            corner_cols = np.concatenate((sorted(corner_cols), np.zeros(100 - len(corner_cols))))/corners.shape[1]
+            corner_features = np.concatenate((corner_rows, corner_cols))
+            return corner_features
+        
         def get_image_corners(image_file):
             """gets given images corner features, this method is writed to suit to thread_this() call
 
