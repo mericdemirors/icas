@@ -5,11 +5,13 @@ from skimage.morphology import flood_fill, flood
 
 from helper_exceptions import *
 
+# ! Not finished
 def edge_segmentation(img_path, verbose=0):
     """segments image with opencv canny edge detection
 
     Args:
         img_path (str): path to image to segment
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         numpy.ndarray: segmented image
@@ -17,6 +19,7 @@ def edge_segmentation(img_path, verbose=0):
     img_to_process = cv2.imread(img_path)
     edge_img = cv2.Canny(img_to_process, 0, 50, 150)
 
+    # individual edge islands
     kernels = [ # -1 means it should be background, 1 means it should be edge, 0 means ignore
     np.array(([-1, -1, -1],[-1, 0, -1],[-1, -1, -1]), dtype="int"),
     np.array([[-1, -1, -1, -1],[-1, 0, 0, -1],[-1, 0, 0, -1],[-1, -1, -1, -1]], dtype="int"),
@@ -38,28 +41,32 @@ def edge_segmentation(img_path, verbose=0):
 
     # surround image with edge so that each background is enclosed with edges
     edge_img = cv2.copyMakeBorder(edge_img, 1,1,1,1, cv2.BORDER_CONSTANT, value=255)
-    for ke in kernels: # pass hit or miss kernels over detected edge images to remove alone edge islands
+
+    # hit or miss kernels over detected edges to remove alone edge islands
+    for ke in kernels:
         detected_islands = cv2.morphologyEx(edge_img, cv2.MORPH_HITMISS, ke, anchor=(0,0), iterations=1)     
         detected_islands_xys = np.where(detected_islands == 255)
         for (x,y) in list(zip(detected_islands_xys[0], detected_islands_xys[1])):
             edge_img[x:x+ke.shape[0], y:y+ke.shape[1]] = 0
 
+    
+    # now -1 means edge (needed for segmenting backgrounds)
     edge_img = edge_img.astype(np.int16)
-    edge_img[edge_img == 255] = -1 # now -1 means edge (needed for segmenting backgrounds)
+    edge_img[edge_img == 255] = -1
 
-    segment_id = 1
     segment_pixels = np.where(edge_img == 0)
+    segment_id = 1
 
     while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
-        ri, ci = segment_pixels[0][0], cluster_pixels[1][0] # get a cluster pixel
+        ri, ci = segment_pixels[0][0], segment_pixels[1][0] # get a segment pixel
         
-        edge_img = flood_fill(edge_img, (ri, ci), cluster_id, connectivity=1, in_place=True) # floodfill cluster
-        extracted_cluster = np.array(edge_img == edge_img[ri][ci]).astype(np.int16) # extract only cluster as binary
-        extracted_cluster = cv2.dilate(extracted_cluster, np.ones((3,3)), iterations=1) # expand cluster borders by one pixel to remove edges
-        np.putmask(edge_img, extracted_cluster != 0, cluster_id) # overwrite expanded cluster to edge_img
+        edge_img = flood_fill(edge_img, (ri, ci), segment_id, connectivity=1, in_place=True) # floodfill segment
+        extracted_segment = np.array(edge_img == edge_img[ri][ci]).astype(np.int16) # extract only segment as binary
+        extracted_segment = cv2.dilate(extracted_segment, np.ones((3,3)), iterations=1) # expand segment borders by one pixel to remove edges
+        np.putmask(edge_img, extracted_segment != 0, segment_id) # overwrite expanded segment to edge_img
 
-        cluster_id = cluster_id + 1
-        cluster_pixels = np.where(edge_img == 0)
+        segment_id = segment_id + 1
+        segment_pixels = np.where(edge_img == 0)
 
     edge_img[edge_img == -1] = 0 # now 0 means edge
     edge_img = edge_img[1:edge_img.shape[0]-1, 1:edge_img.shape[1]-1] # remove the added border
@@ -72,6 +79,7 @@ def superpixel_segmentation(img_path, region_size, ruler, verbose=0):
         img_path (str): path to image to segment
         region_size (int): region_size parameter for superpixel
         ruler (int): ruler parameter for superpixel
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         numpy.ndarray: segmented image
@@ -97,15 +105,15 @@ def kmeans_segmentation(img_path, k, color_importance, verbose=0):
         img_path (str): path to image to segment
         k (int): k parameter for opencv kmeans
         color_importance (int): importance of pixel colors proportional to pixels coordinates
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         numpy.ndarray: segmented image
     """
     img_to_process = cv2.imread(img_path)
 
-    num_of_rows, num_of_columns = img_to_process.shape[:2]
-    # numpy matrix that holds image coordinates
-    xy_img = np.array([[r,c] for r in range(num_of_rows) for c in range(num_of_columns)]).reshape((img_to_process.shape[0], img_to_process.shape[1], 2)) / color_importance
+    # numpy matrix that holds pixel coordinates
+    xy_img = np.array([[r,c] for r in range(img_to_process.shape[0]) for c in range(img_to_process.shape[1])]).reshape((img_to_process.shape[0], img_to_process.shape[1], 2)) / color_importance
     pixel_data = np.concatenate([img_to_process, xy_img], axis=2)    
 
     # Convert the img to the required format for K-means (flatten to 2D array), pixels are represented as: [X, Y, COLOR_VALUES]
@@ -136,6 +144,7 @@ def segment_image(method, img_path="", region_size=40, ruler=30, k=15, color_imp
         ruler (int, optional): ruler parameter for superpixel. Defaults to 30.
         k (int, optional): k parameter for opencv kmeans. Defaults to 15.
         color_importance (int, optional): importance of pixel colors proportional to pixels coordinates: _description_. Defaults to 5.
+        verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
         numpy.ndarray: segmented image, segment ids start from 1, edges between segments are 0 if exist
@@ -159,6 +168,7 @@ def fill(result_img, segmented_img, painted_pixels, click_row, click_column, col
         click_row (int): row index of selected pixel
         click_column (int): column index of selected pixel
         color (list): BGR values of color that is being filled
+        verbose (int, optional): verbose level. Defaults to 0.
     """
     # get selected segment pixels on all layers at image being segmented
     if painted_pixels[click_row, click_column] == 1: # if this pixel is previously painted, so we should overpaint it on the result image
@@ -186,6 +196,7 @@ def unfill(result_img, painted_pixels, raw_img, click_row, click_column, verbose
         raw_img (numpy.ndarray): non-processed original image
         click_row (int): row index of selected pixel
         click_column (int): column index of selected pixel
+        verbose (int, optional): verbose level. Defaults to 0.
     """
     # get selected segment pixels on all layers at image being segmented
     selected_segment_B = flood(result_img[:,:,0], (click_row, click_column), connectivity=1).astype(np.uint8)
@@ -207,6 +218,7 @@ def print_verbose(verbose_type, message, verbose=0):
     Args:
         verbose_type (int or str): int for indicating batch_idx or string for result/error
         message (str): message to print
+        verbose (int, optional): verbose level. Defaults to 0.
     """
     output = "[" + time.strftime("%H:%M:%S") + "] - " 
     if verbose_type == "q":
