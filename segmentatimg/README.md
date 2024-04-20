@@ -3,8 +3,8 @@
 Tool for segmentating images
 
 TO-ADD
-- masklar binary, color ismine göre kaydedilsin
 - template matching ekle, eğer template uyumu varsa sağlanan maskeyi oraya koyup boya
+- segmented image debug display
 
 TO-TRY
 - edge sensitive SLIC/suerpixels
@@ -12,9 +12,9 @@ TO-TRY
 - edge+snake(kitapta 300-334 falan, 368'e de bak) dene
 
 TO-TIDY
-- make it class
 - fonksiyonlara böl
 - check thread processing efficiency
+- add verbose levels
 
 TO-FIX
 
