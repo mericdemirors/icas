@@ -10,16 +10,17 @@ from helper_functions import *
 
 
 class Segmentating:
-    def __init__(self, image_folder, save_folder, method):
+    def __init__(self, image_folder, save_folder, method, verbose=0):
         self.folder = image_folder
         self.save_folder = save_folder
         self.method = method
+        self.verbose=0
 
         self.segmented_img_dict = {} # distionary to save thread processing results
         self.thread_range = 10 # number of images to prepare at both left and right side of current index
         self.thread_stop = False # indicates when to stop threads
 
-    def processed_image_callbacks(self, event, x, y, flags, callback_info):
+    def processed_image_callbacks(self, event, x, y, flags, callback_info, verbose=0):
         """detects mouse inputs and manages information dictionary
 
         Args:
@@ -90,7 +91,7 @@ class Segmentating:
             color_info['y'] = y
             color_info['clicked'] = True
 
-    def color_picker_feedback(self, callback_info, color_picker_img, color_info):
+    def color_picker_feedback(self, callback_info, color_picker_img, color_info, verbose=0):
         """imshows color picker image and extra informations for user
 
         Args:
@@ -117,7 +118,7 @@ class Segmentating:
 
         cv2.imshow("Color Picker", color_picker_img_display)
 
-    def process_image(self, files, file_no, method, region_size, ruler, k, color_importance):
+    def process_image(self, files, file_no, method, region_size, ruler, k, color_importance, verbose=0):
         """Function to process cluster images with thread
 
         Args:
@@ -150,7 +151,7 @@ class Segmentating:
                 self.segmented_img_dict[img_path] = (raw_img, clustered_img)
             lock.release()
 
-    def start_thread_func(self, files, file_no, method, region_size, ruler, k, color_importance):
+    def start_thread_func(self, files, file_no, method, region_size, ruler, k, color_importance, verbose=0):
         """function to start thread processing and return thread
 
         Args:
@@ -165,12 +166,12 @@ class Segmentating:
         Returns:
             threading.Thread: thread that is created for processing
         """
-        thread = threading.Thread(target=self.process_image, args=(files, file_no, method, region_size, ruler, k, color_importance), daemon=True)
+        thread = threading.Thread(target=self.process_image, args=(files, file_no, method, region_size, ruler, k, color_importance, verbose-1), daemon=True)
         thread.start()
         print("Thread", thread, "started", file_no)
         return thread
 
-    def save_masks(self, mask_path, painted_pixels, result_img):
+    def save_masks(self, mask_path, painted_pixels, result_img, verbose=0):
         """saves each segment mask individualy
 
         Args:
@@ -185,7 +186,7 @@ class Segmentating:
             mask[indices[:, 0], indices[:, 1]] = [255,255,255]
             cv2.imwrite(mask_path + str(color) + ".png", mask)
 
-    def segment(self, raw_img, clustered_img, result_img, save_folder, image_name, image_no, color_picker_img):
+    def segment(self, raw_img, clustered_img, result_img, save_folder, image_name, image_no, color_picker_img, verbose=0):
         """segments given image and saves it to output folder
 
         Args:
@@ -224,25 +225,24 @@ class Segmentating:
 
             ### --- --- --- --- --- process_key(key) function will capsulate here --- --- --- --- --- ###
             if key == ord('q'): # quit
-                print_verbose("q", "ending_session, waiting for threads...")
+                print_verbose("q", "ending_session, waiting for threads...", verbose=verbose-1)
                 return "quit"
             elif key == ord('n'): # next image without saving current one
-                print_verbose("n", "going forward from image" + image_name + " without saving")
+                print_verbose("n", "going forward from image" + image_name + " without saving", verbose=verbose-1)
                 return "next"
             elif key == ord('p'): # previous image without saving current one
-                print_verbose("p", "going back from image " + image_name + " without saving")
+                print_verbose("p", "going back from image " + image_name + " without saving", verbose=verbose-1)
                 return "previous"
             elif key == ord('s'): # save
-                print_verbose("s", "going forward from image " + image_name + " after saving")
-                self.save_masks(os.path.join(save_folder, image_name + "_mask_"), painted_pixels, result_img)
-                # cv2.imwrite(os.path.join(save_folder, image_name + "_mask_" + str(time.strftime("%H:%M:%S") + ".png")), result_img)
+                print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
+                self.save_masks(os.path.join(save_folder, image_name + "_mask_"), painted_pixels, result_img, verbose=verbose-1)
                 return "save"
             elif key == ord('z'): # ctrl + z last action
                 if len(ctrl_z_stack) > 0:
                     result_img, painted_pixels, line_img = ctrl_z_stack.pop()
                     cv2.imshow("Processed Image " + str(image_no), result_img)
             elif key == ord('r'): # reset all actions
-                print_verbose("r", "reseting image " + image_name)
+                print_verbose("r", "reseting image " + image_name, verbose=verbose-1)
                 ctrl_z_stack.append((previous_result_img.copy(), previous_painted_pixels.copy(), line_img.copy()))
                 result_img = raw_img.copy()
                 painted_pixels=np.zeros_like(clustered_img)
@@ -260,7 +260,7 @@ class Segmentating:
             ### --- --- --- --- --- process_color(color_info) function will capsulate here --- --- --- --- --- ###
 
             # display feedback on color_picker_img(can be more efficient than always calling this function[maybe call on action updates])
-            self.color_picker_feedback(callback_info, color_picker_img, color_info)
+            self.color_picker_feedback(callback_info, color_picker_img, color_info, verbose=verbose-1)
 
             ### --- --- --- --- --- process_action(callback_info) function will capsulate here --- --- --- --- --- ###
             if callback_info["continuous_filling"] or callback_info["continuous_unfilling"]: # if one of continuous modes is on
@@ -304,7 +304,7 @@ class Segmentating:
                 cv2.imshow("Processed Image " + str(image_no), result_img)
             ### --- --- --- --- --- process_action(callback_info) function will capsulate here --- --- --- --- --- ###
 
-    def start_segmenting(self, image_folder, save_folder, method, region_size=40, ruler=30, k=15, color_importance=5, color_picker_path=""):
+    def start_segmenting(self, image_folder, save_folder, method, region_size=40, ruler=30, k=15, color_importance=5, color_picker_path="", verbose=0):
         """function to segment images in a folder in order and save them to output folder
 
         Args:
@@ -319,7 +319,7 @@ class Segmentating:
         """
         color_picker_img = cv2.imread(color_picker_path)
         if color_picker_img is None:
-            print_verbose("e", "No color picking image passed")
+            print_verbose("e", "No color picking image passed", verbose=verbose-1)
 
         save_folder = os.path.join(os.path.split(image_folder)[0], save_folder)
         os.makedirs(save_folder, exist_ok=True)
@@ -336,14 +336,14 @@ class Segmentating:
             img_path = os.path.join(image_folder, file_name)
 
             if file_no not in threads.keys():
-                thread = self.start_thread_func(files, file_no, method, region_size, ruler, k, color_importance)
+                thread = self.start_thread_func(files, file_no, method, region_size, ruler, k, color_importance, verbose=verbose-1)
                 threads[file_no] = thread
             else:
                 pass
 
             if img_path in self.segmented_img_dict.keys() and self.segmented_img_dict[img_path] is not None:
                 raw_img, clustered_img = self.segmented_img_dict[img_path]
-                return_code = self.segment(raw_img, clustered_img, raw_img.copy(), save_folder, file_name, file_no, color_picker_img)
+                return_code = self.segment(raw_img, clustered_img, raw_img.copy(), save_folder, file_name, file_no, color_picker_img, verbose=verbose-1)
 
                 cv2.destroyWindow("Processed Image " + str(file_no))
                 
@@ -361,16 +361,16 @@ class Segmentating:
         cv2.destroyAllWindows()
         time.sleep(1)
 
-    def process(self):
+    def process(self, verbose=0):
         cp_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png")
         print(cp_path)
-        self.start_segmenting(self.folder, self.save_folder, self.method, color_picker_path=cp_path)
+        self.start_segmenting(self.folder, self.save_folder, self.method, color_picker_path=cp_path, verbose=verbose-1)
 
         cv2.destroyAllWindows()
 
     def __call__(self):
         try:
-            self.process()
+            self.process(self.verbose)
         except ErrorException as ee:
             print(ee.message)
             exit(ee.error_code)

@@ -14,7 +14,7 @@ TO-TRY
 TO-TIDY
 - fonksiyonlara böl
 - check thread processing efficiency
-- add verbose levels
+- argumans and comments
 
 TO-FIX
 

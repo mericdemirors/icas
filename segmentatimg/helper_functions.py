@@ -5,7 +5,7 @@ from skimage.morphology import flood_fill, flood
 
 from helper_exceptions import *
 
-def edge_segmentation(img_path):
+def edge_segmentation(img_path, verbose=0):
     """segments image with opencv canny edge detection
 
     Args:
@@ -65,7 +65,7 @@ def edge_segmentation(img_path):
     edge_img = edge_img[1:edge_img.shape[0]-1, 1:edge_img.shape[1]-1] # remove the added border
     return edge_img.astype(np.int16)
 
-def superpixel_segmentation(img_path, region_size, ruler):
+def superpixel_segmentation(img_path, region_size, ruler, verbose=0):
     """segments image with opencv superpixel
 
     Args:
@@ -90,7 +90,7 @@ def superpixel_segmentation(img_path, region_size, ruler):
     
     return superpixel_mask + 1 
 
-def kmeans_segmentation(img_path, k, color_importance):
+def kmeans_segmentation(img_path, k, color_importance, verbose=0):
     """segments image with opencv kmeans
 
     Args:
@@ -126,7 +126,7 @@ def kmeans_segmentation(img_path, k, color_importance):
 
     return labels
 
-def segment_image(method, img_path="", region_size=40, ruler=30, k=15, color_importance=5):
+def segment_image(method, img_path="", region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
     """segments image with selected segmentation process
 
     Args:
@@ -141,15 +141,15 @@ def segment_image(method, img_path="", region_size=40, ruler=30, k=15, color_imp
         numpy.ndarray: segmented image, segment ids start from 1, edges between segments are 0 if exist
     """
     if method == "edge":
-        result_img = edge_segmentation(img_path)
+        result_img = edge_segmentation(img_path, verbose=verbose-1)
     elif method == "superpixel":
-        result_img = superpixel_segmentation(img_path, region_size=region_size, ruler=ruler)
+        result_img = superpixel_segmentation(img_path, region_size=region_size, ruler=ruler, verbose=verbose-1)
     elif method == "kmeans":
-        result_img = kmeans_segmentation(img_path, k=k, color_importance=color_importance)
+        result_img = kmeans_segmentation(img_path, k=k, color_importance=color_importance, verbose=verbose-1)
 
     return result_img
 
-def fill(result_img, segmented_img, painted_pixels, click_row, click_column, color):
+def fill(result_img, segmented_img, painted_pixels, click_row, click_column, color, verbose=0):
     """fills segment that selected pixel belongs in result image according to segmented_image and painted_pixels
 
     Args:
@@ -177,7 +177,7 @@ def fill(result_img, segmented_img, painted_pixels, click_row, click_column, col
     # mark as painted
     painted_pixels[selected_segment==1] = 1
 
-def unfill(result_img, painted_pixels, raw_img, click_row, click_column):
+def unfill(result_img, painted_pixels, raw_img, click_row, click_column, verbose=0):
     """unfills segment that selected pixel belongs in result image according to segmented_image and painted_pixels
 
     Args:
@@ -201,7 +201,7 @@ def unfill(result_img, painted_pixels, raw_img, click_row, click_column):
     # mark as not painted
     painted_pixels[selected_segment==1] = 0
 
-def print_verbose(verbose_type, message):
+def print_verbose(verbose_type, message, verbose=0):
     """Prints verbose messages
 
     Args:
