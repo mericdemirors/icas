@@ -17,4 +17,4 @@ TO-TIDY
 - self.full_path_images attribure
 
 TO-FIX
-
+- add z stack if there is change

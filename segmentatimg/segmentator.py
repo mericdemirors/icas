@@ -138,7 +138,7 @@ class Segmentating:
 
         cv2.imshow("Color Picker", color_picker_image_display)
 
-    def process_image(self, files, file_no, region_size, ruler, k, color_importance, verbose=0):
+    def pass_image_to_thread(self, files, file_no, region_size, ruler, k, color_importance, verbose=0):
         """Function to process segment images with thread
 
         Args:
@@ -171,7 +171,7 @@ class Segmentating:
                 self.segmented_image_dict[image_path] = (raw_image, segmented_image)
             lock.release()
 
-    def start_thread_func(self, files, file_no, region_size, ruler, k, color_importance, verbose=0):
+    def create_thread(self, files, file_no, region_size, ruler, k, color_importance, verbose=0):
         """function to start thread processing and return thread
 
         Args:
@@ -186,7 +186,7 @@ class Segmentating:
         Returns:
             threading.Thread: thread that is created for processing
         """
-        thread = threading.Thread(target=self.process_image, args=(files, file_no, region_size, ruler, k, color_importance, verbose-1), daemon=True)
+        thread = threading.Thread(target=self.pass_image_to_thread, args=(files, file_no, region_size, ruler, k, color_importance, verbose-1), daemon=True)
         thread.start()
         return thread
 
@@ -206,6 +206,127 @@ class Segmentating:
             mask = np.zeros_like(result_image)
             mask[indices[:, 0], indices[:, 1]] = [255,255,255]
             cv2.imwrite(mask_path + str(color) + ".png", mask)
+
+    def process_key(self, raw_image, segmented_image, result_image, image_name, image_no, ctrl_z_stack, previous_result_image, painted_pixels, previous_painted_pixels, key, verbose=0):
+        """processes keyboard inputs
+
+        Args:
+            raw_image (numpy.ndarray): nonprocessed image
+            segmented_image (numpy.ndarray): pre-segmented image
+            result_image (numpy.ndarray): processing image
+            image_name (str): image file name
+            image_no (int): image file number
+            ctrl_z_stack (list): list of last actions for reverse
+            previous_result_image (numpy.ndarray): previous processing image state
+            painted_pixels (numpy.ndarray): contains which pixels are segmented
+            previous_painted_pixels (numpy.ndarray): previous segmented pixels
+            key (str): keyboard input
+            verbose (int, optional): verbose level. Defaults to 0.
+
+        Returns:
+            str: what action is taken
+        """
+        if key == ord('q'): # quit
+            print_verbose("q", "ending_session, waiting for threads...", verbose=verbose-1)
+            return "quit"
+        elif key == ord('n'): # next image without saving current one
+            print_verbose("n", "going forward from image" + image_name + " without saving", verbose=verbose-1)
+            return "next"
+        elif key == ord('p'): # previous image without saving current one
+            print_verbose("p", "going back from image " + image_name + " without saving", verbose=verbose-1)
+            return "previous"
+        elif key == ord('s'): # save
+            print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
+            self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), painted_pixels, result_image, verbose=verbose-1)
+            return "save"
+        elif key == ord('z'): # ctrl + z last action
+            if len(ctrl_z_stack) > 0:
+                result_image, painted_pixels = ctrl_z_stack.pop()
+                cv2.imshow("Processed Image " + str(image_no), result_image)
+        elif key == ord('r'): # reset all actions
+            print_verbose("r", "reseting image " + image_name, verbose=verbose-1)
+            ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy()))
+            result_image = raw_image.copy()
+            painted_pixels=np.zeros_like(segmented_image)
+            cv2.imshow("Processed Image " + str(image_no), result_image)
+
+    def process_color(self, color_info, previous_color):
+        """selects color
+
+        Args:
+            color_info (dictionary): contains color selection informartion
+            previous_color (list): value of previous color
+
+        Returns:
+            tuple: color for next function call
+        """
+        if color_info['clicked']: # color selecting
+            click_column = color_info['x']
+            click_row = color_info['y']
+            color = self.color_picker_image[click_row, click_column]
+            color_info["clicked"] = False
+            return color
+        else:
+            return previous_color
+
+    def process_action(self, raw_image, segmented_image, result_image, image_no, ctrl_z_stack, painted_pixels, color, callback_info):
+        """processes taken action
+
+        Args:
+            raw_image (numpy.ndarray): nonprocessed image
+            segmented_image (numpy.ndarray): pre-segmented image
+            result_image (numpy.ndarray): processing image
+            image_no (int): file number of image
+            ctrl_z_stack (list): list of changes in case of reversing
+            painted_pixels (numpy.ndarray): contains which pixels are segmented
+            color (list): values of selected color
+            callback_info (dictionary): contains selected action information
+
+        Returns:
+            tuple: previous result and painted pixel images
+        """
+        if callback_info["continuous_filling"] or callback_info["continuous_unfilling"]: # if one of continuous modes is on
+            click_column = callback_info['x']
+            click_row = callback_info['y']
+            
+            previous_result_image, previous_painted_pixels = result_image.copy(), painted_pixels.copy()
+
+            if callback_info["continuous_filling"]:                
+                fill(result_image, segmented_image, painted_pixels, click_row, click_column, color)
+            
+            elif callback_info["continuous_unfilling"]:
+                unfill(result_image, painted_pixels, raw_image, click_row, click_column)
+
+            if np.any(np.equal(previous_result_image, result_image) == False): # means there is a change while continuously filling
+                ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy()))
+                cv2.imshow("Processed Image " + str(image_no), result_image)
+
+            return previous_result_image, previous_painted_pixels
+
+        if callback_info['clicked']: # if a clicking action detected
+            callback_info["clicked"] = False
+            click_column = callback_info['x']
+            click_row = callback_info['y']
+
+            ctrl_z_stack.append((result_image.copy(), painted_pixels.copy()))
+
+            if callback_info["action"] == "fill": # fill the thing at pos: [click_row, click_column]
+                fill(result_image, segmented_image, painted_pixels, click_row, click_column, color)
+                
+            elif callback_info["action"] == "unfill": # unfill the thing at pos: [click_row, click_column]
+                unfill(result_image, painted_pixels, raw_image, click_row, click_column)
+                
+            elif callback_info["action"] == "cut": # cut the segments with a line
+                if callback_info["first_cut"] != None and callback_info["second_cut"] != None:
+                    line_image = np.zeros_like(result_image) # image to cut segment
+                    cv2.line(line_image, callback_info["first_cut"] , callback_info["second_cut"], (255,255,255), 1) 
+                    result_image[line_image==255] = raw_image[line_image==255]
+                    segmented_image[line_image[:,:,0]==255] = 0
+                    painted_pixels[line_image[:,:,0]==255] = 0
+
+            cv2.imshow("Processed Image " + str(image_no), result_image)
+
+        return None, None
 
     def segment(self, raw_image, segmented_image, result_image, image_name, image_no, verbose=0):
         """segments given image and saves it to output folder
@@ -236,91 +357,26 @@ class Segmentating:
         cv2.setMouseCallback("Color Picker", self.color_callback, color_info)
 
         painted_pixels=np.zeros_like(segmented_image) # pixels that are segmented
-        line_image = np.zeros_like(result_image) # image to cut segment
         ctrl_z_stack = [] # stack for reversing actions
         color = [0,0,0] # BGR values
+        previous_color = color
+        previous_result_image = result_image.copy()
+        previous_painted_pixels = painted_pixels.copy()
 
         while True:
             key = cv2.waitKey(1)
             self.color_picker_feedback(callback_info, color_info)
 
-            ### --- --- --- --- --- process_key(key) function will capsulate here --- --- --- --- --- ###
-            if key == ord('q'): # quit
-                print_verbose("q", "ending_session, waiting for threads...", verbose=verbose-1)
-                return "quit"
-            elif key == ord('n'): # next image without saving current one
-                print_verbose("n", "going forward from image" + image_name + " without saving", verbose=verbose-1)
-                return "next"
-            elif key == ord('p'): # previous image without saving current one
-                print_verbose("p", "going back from image " + image_name + " without saving", verbose=verbose-1)
-                return "previous"
-            elif key == ord('s'): # save
-                print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
-                self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), painted_pixels, result_image, verbose=verbose-1)
-                return "save"
-            elif key == ord('z'): # ctrl + z last action
-                if len(ctrl_z_stack) > 0:
-                    result_image, painted_pixels, line_image = ctrl_z_stack.pop()
-                    cv2.imshow("Processed Image " + str(image_no), result_image)
-            elif key == ord('r'): # reset all actions
-                print_verbose("r", "reseting image " + image_name, verbose=verbose-1)
-                ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy(), line_image.copy()))
-                result_image = raw_image.copy()
-                painted_pixels=np.zeros_like(segmented_image)
-                line_image = np.zeros_like(result_image)
-                cv2.imshow("Processed Image " + str(image_no), result_image)
-            ### --- --- --- --- --- process_key(key) function will capsulate here --- --- --- --- --- ###
+            action = self.process_key(raw_image, segmented_image, result_image, image_name, image_no, ctrl_z_stack, previous_result_image, painted_pixels, previous_painted_pixels, key, verbose=0)
+            if action:
+                return action
 
-            ### --- --- --- --- --- process_color(color_info) function will capsulate here --- --- --- --- --- ###
-            if color_info['clicked']: # color selecting
-                click_column = color_info['x']
-                click_row = color_info['y']
-                color = self.color_picker_image[click_row, click_column]
-                color_info["clicked"] = False
-            ### --- --- --- --- --- process_color(color_info) function will capsulate here --- --- --- --- --- ###
+            previous_color = color
+            color = self.process_color(color_info, previous_color)
 
-
-            ### --- --- --- --- --- process_action(callback_info) function will capsulate here --- --- --- --- --- ###
-            if callback_info["continuous_filling"] or callback_info["continuous_unfilling"]: # if one of continuous modes is on
-                click_column = callback_info['x']
-                click_row = callback_info['y']
-                
-                previous_result_image, previous_painted_pixels = result_image.copy(), painted_pixels.copy()
-
-                if callback_info["continuous_filling"]:                
-                    fill(result_image, segmented_image, painted_pixels, click_row, click_column, color)
-                
-                elif callback_info["continuous_unfilling"]:
-                    unfill(result_image, painted_pixels, raw_image, click_row, click_column)
-
-                if np.any(np.equal(previous_result_image, result_image) == False): # means there is a change while continuously filling
-                    ctrl_z_stack.append((previous_result_image.copy(), previous_painted_pixels.copy(), line_image.copy()))
-                    cv2.imshow("Processed Image " + str(image_no), result_image)
-
-                continue
-
-            if callback_info['clicked']: # if a clicking action detected
-                callback_info["clicked"] = False
-                click_column = callback_info['x']
-                click_row = callback_info['y']
-
-                ctrl_z_stack.append((result_image.copy(), painted_pixels.copy(), line_image.copy()))
-
-                if callback_info["action"] == "fill": # fill the thing at pos: [click_row, click_column]
-                    fill(result_image, segmented_image, painted_pixels, click_row, click_column, color)
-                    
-                elif callback_info["action"] == "unfill": # unfill the thing at pos: [click_row, click_column]
-                    unfill(result_image, painted_pixels, raw_image, click_row, click_column)
-                    
-                elif callback_info["action"] == "cut": # cut the segments with a line
-                    if callback_info["first_cut"] != None and callback_info["second_cut"] != None:
-                        cv2.line(line_image, callback_info["first_cut"] , callback_info["second_cut"], (255,255,255), 1) 
-                        result_image[line_image==255] = raw_image[line_image==255]
-                        segmented_image[line_image[:,:,0]==255] = 0
-                        painted_pixels[line_image[:,:,0]==255] = 0
-
-                cv2.imshow("Processed Image " + str(image_no), result_image)
-            ### --- --- --- --- --- process_action(callback_info) function will capsulate here --- --- --- --- --- ###
+            prev1, prev2 = self.process_action(raw_image, segmented_image, result_image, image_no, ctrl_z_stack, painted_pixels, color, callback_info)
+            if prev1 is not None and prev2 is not None:
+                previous_result_image, previous_painted_pixels = prev1, prev2
 
     def process(self, region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
         """function to segment images in a folder in order and save them to output folder
@@ -349,7 +405,7 @@ class Segmentating:
 
             # if file is not processed yet, start a process for it
             if file_no not in threads.keys():
-                thread = self.start_thread_func(files, file_no, region_size, ruler, k, color_importance, verbose=verbose-1)
+                thread = self.create_thread(files, file_no, region_size, ruler, k, color_importance, verbose=verbose-1)
                 threads[file_no] = thread
 
             # if files process is done start segmenting it
@@ -362,7 +418,6 @@ class Segmentating:
                 if return_code == "quit": # q
                     self.thread_stop = True
                     cv2.destroyAllWindows()
-                    time.sleep(1)
                     return # end the session
                 elif return_code == "next" or return_code == "save": # n or s
                     file_no = file_no + 1
@@ -371,7 +426,6 @@ class Segmentating:
         
         self.thread_stop = True
         cv2.destroyAllWindows()
-        time.sleep(1)
 
     def __call__(self):
         """calling the object will start the main process and catch any possible exception during
