@@ -10,7 +10,7 @@ from helper_functions import *
 
 
 class Segmentating:
-    def __init__(self, image_folder, method, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), verbose=0):
+    def __init__(self, image_folder, method, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), region_size = 40, ruler = 30, k = 15, color_importance = 5, thread_range = 10, verbose=0):
         """initializing segmenting object
 
         Args:
@@ -23,6 +23,11 @@ class Segmentating:
         self.method = method
         self.verbose = verbose
 
+        self.region_size = region_size
+        self.ruler = ruler
+        self.k = k
+        self.color_importance = color_importance
+
         print(color_picker_image_path)
         self.color_picker_image = cv2.imread(color_picker_image_path)
         if self.color_picker_image is None:
@@ -32,7 +37,7 @@ class Segmentating:
         self.save_folder = os.path.join(base_folder, images_folder_name + "_clustered")
 
         self.segmented_image_dict = {} # distionary to save thread processing results
-        self.thread_range = 10 # number of images to prepare at both left and right side of current index
+        self.thread_range = thread_range # number of images to prepare at both left and right side of current index
         self.thread_stop = False # indicates when to stop threads
 
     def processed_image_callbacks(self, event, x, y, flags, callback_info):
@@ -317,7 +322,7 @@ class Segmentating:
                 cv2.imshow("Processed Image " + str(image_no), result_image)
             ### --- --- --- --- --- process_action(callback_info) function will capsulate here --- --- --- --- --- ###
 
-    def start_segmenting(self, region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
+    def process(self, region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
         """function to segment images in a folder in order and save them to output folder
 
         Args:
@@ -368,20 +373,11 @@ class Segmentating:
         cv2.destroyAllWindows()
         time.sleep(1)
 
-    def process(self, verbose=0):
-        """main process to capsulate every process
-
-        Args:
-            verbose (int, optional): level of verbose. Defaults to 0.
-        """
-        self.start_segmenting(verbose=verbose-1)
-        cv2.destroyAllWindows()
-
     def __call__(self):
         """calling the object will start the main process and catch any possible exception during
         """
         try:
-            self.process(self.verbose-1)
+            self.process(self.region_size, self.ruler, self.k, self.color_importance, verbose=self.verbose-1)
         except ErrorException as ee:
             print(ee.message)
             exit(ee.error_code)
