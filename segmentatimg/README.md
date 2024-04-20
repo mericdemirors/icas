@@ -14,7 +14,7 @@ TO-TRY
 TO-TIDY
 - fonksiyonlara böl
 - check thread processing efficiency
-- function parameters
+- self.full_path_images attribure
 
 TO-FIX
 
