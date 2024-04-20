@@ -106,7 +106,7 @@ def user_feedback(callback_info, color_picker_img, color_info):
 
     cv2.imshow("Color Picker", color_picker_img_display)
 
-clustered_img_dict = {} # distionary to save thread processing results
+segmented_img_dict = {} # distionary to save thread processing results
 thread_range = 10 # number of images to prepare at both left and right side of current index
 thread_stop = False # indicates when to stop threads
 def process_image(files, file_no, method, region_size, ruler, k, color_importance):
@@ -121,7 +121,7 @@ def process_image(files, file_no, method, region_size, ruler, k, color_importanc
         k (int): k parameter for opencv kmeans
         color_importance (int): importance of pixel colors proportional to pixels coordinates
     """
-    global thread_range, thread_stop, clustered_img_dict
+    global thread_range, thread_stop, segmented_img_dict
     # iterate at surrounding images of current image
     for file_no in range(max(file_no-thread_range, 0), min(file_no+thread_range, len(files))):
         if thread_stop:
@@ -129,12 +129,18 @@ def process_image(files, file_no, method, region_size, ruler, k, color_importanc
 
         img_path = os.path.join(img_folder, files[file_no])
         
+        # add key to dict to prevent upcoming threads to process same image while it is already being processed
         lock.acquire()
-        if img_path not in clustered_img_dict.keys(): 
+        if img_path not in segmented_img_dict.keys(): 
+            segmented_img_dict[img_path] = None
+        lock.release()
+
+        lock.acquire()
+        if segmented_img_dict[img_path] is None: 
             # if iterated image is not processed add it to dictionary
             raw_img = cv2.imread(img_path)
             clustered_img = cluster_image(method=method, img_path=img_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
-            clustered_img_dict[img_path] = (raw_img, clustered_img)
+            segmented_img_dict[img_path] = (raw_img, clustered_img)
         lock.release()
 
 def start_thread_func(files, file_no, method, region_size, ruler, k, color_importance):
@@ -288,11 +294,11 @@ def start_segmenting(img_folder, save_folder, method, region_size=40, ruler=30, 
         color_importance (int, optional): color importance parameter for cv2 kmeans. Defaults to 5.
         color_picker_path (str, optional): path to read color picking image.
     """
+    global thread_stop
 
     color_picker_img = cv2.imread(color_picker_path)
     if color_picker_img is None:
-        print("No color picking image passed", flush=True)
-        exit()
+        print_verbose("e", "No color picking image passed")
 
     save_folder = os.path.join(os.path.split(img_folder)[0], save_folder)
     os.makedirs(save_folder, exist_ok=True)
@@ -314,8 +320,8 @@ def start_segmenting(img_folder, save_folder, method, region_size=40, ruler=30, 
         else:
             pass
 
-        if img_path in clustered_img_dict.keys():
-            raw_img, clustered_img = clustered_img_dict[img_path]
+        if img_path in segmented_img_dict.keys() and segmented_img_dict[img_path] is not None:
+            raw_img, clustered_img = segmented_img_dict[img_path]
             return_code = segment(raw_img, clustered_img, raw_img.copy(), save_folder, file_name, file_no, color_picker_img)
 
             cv2.destroyWindow("Processed Image " + str(file_no))
@@ -331,16 +337,19 @@ def start_segmenting(img_folder, save_folder, method, region_size=40, ruler=30, 
     
     thread_stop = True
     cv2.destroyAllWindows()
+    time.sleep(1)
 
 
 if __name__ == "__main__":
-    img_folder=input("Path to images: ")
-    save_folder=input("Output folder name: ")
-    method=input("method to segmentate images(s:superpixel, km:kmeans, e:edge): ")
+    img_folder="/home/mericdemirors/Pictures/titles"
+    save_folder="/home/mericdemirors/Pictures/titles_seg"
+    method="s" # input("method to segmentate images(s:superpixel, km:kmeans, e:edge): ")
     
     method_dict = {"s":"superpixel", "km":"kmeans", "e":"edge"}
     method = method_dict[method]
 
-    start_segmenting(img_folder, save_folder, method, color_picker_path="/home/ai/LokalImSegment/ColorPicker.png")
+    cp_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png")
+    print(cp_path)
+    start_segmenting(img_folder, save_folder, method, color_picker_path=cp_path)
 
     cv2.destroyAllWindows()

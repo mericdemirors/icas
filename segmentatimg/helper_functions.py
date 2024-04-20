@@ -151,7 +151,6 @@ def cluster_image(method, img_path="", region_size=40, ruler=30, k=15, color_imp
     # cluster ids start from 1 and increment by 1
     return result_img
 
-
 def fill(result_img, clustered_img, painted_pixels, click_row, click_column, color):
     """fills cluster that selected pixel belongs in result image according to clustered_image and painted_pixels
 
