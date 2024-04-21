@@ -100,7 +100,7 @@ def similarity_methods(method, images, image1_file, image2_file, verbose=0):
         sim = len(good_matches) / len(matches)
     
     elif method == "TM":
-        sim = np.float64(np.min(cv2.matchTemplate(images[image1_file], images[image2_file], cv2.TM_SQDIFF_NORMED)))
+        sim = 1 - np.float64(np.min(cv2.matchTemplate(images[image1_file], images[image2_file], cv2.TM_SQDIFF_NORMED)))
 
     return sim
 
