@@ -406,7 +406,7 @@ def get_image_features(method, image_paths, size, scale, verbose=0):
         image_features = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
     elif method == "TM":
-        image_features = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for TM, may take a while", leave=False)}
+        image_features = {image_file:read_and_resize(image_file, size, scale, gray=False) for image_file in tqdm(image_paths, desc="Reading images for TM, may take a while", leave=False)}
 
     return image_features
 
