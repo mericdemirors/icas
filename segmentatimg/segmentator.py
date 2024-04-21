@@ -11,7 +11,7 @@ lock = Lock()
 from helper_functions import *
 
 class Segmentating:
-    def __init__(self, image_folder, method, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), region_size = 40, ruler = 30, k = 15, color_importance = 5, templates=[], attentions=[], segments=[], masks=[], thread_range = 10, verbose=0):
+    def __init__(self, image_folder, method, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), region_size = 40, ruler = 30, k = 15, color_importance = 5, templates=[], attentions=[], segments=[], masks=[], threshold=None, thread_range = 10, verbose=0):
         """initializing segmenting object
 
         Args:
@@ -22,10 +22,15 @@ class Segmentating:
             ruler (int, optional): ruler parameter for cv2 superpixel. Defaults to 30.
             k (int, optional): k parameter for cv2 kmeans. Defaults to 15.
             color_importance (int, optional): color importance parameter for cv2 kmeans. Defaults to 5.
-            temp_att_seg_mask (dictionary): templates, template matching masks, segments and masks
+            templates (list, optional): templates to search in raw images. Defaults to [].
+            attentions (list, optional): template masks to where to pay attention, will be derived from templates if not provided. Defaults to [].
+            segments (list, optional): segments to paint detected templates. Defaults to [].
+            masks (list, optional): segment masks to where to paint, will be derived from segments if not provided. Defaults to [].
+            threshold (_type_, optional): _description_. Defaults to None.
             thread_range (int, optional): depth of image processings at previous and upcoming images on list. Defaults to 10.
             verbose (int, optional): verbose level. Defaults to 0.
         """
+
         self.image_folder = image_folder
         self.files = sorted([os.path.join(self.image_folder, file) for file in os.listdir(self.image_folder)])
         self.method = method
@@ -34,6 +39,7 @@ class Segmentating:
         self.ruler = ruler
         self.k = k
         self.color_importance = color_importance
+        self.threshold = threshold
 
         if attentions == [] and masks == []:
             for (temp, seg) in list(zip(templates, segments)):
@@ -47,15 +53,9 @@ class Segmentating:
                 attention = attention[1:-1,1:-1]
                 attentions.append(attention)
 
-                border_seg = cv2.copyMakeBorder(seg, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
-                painted_part_B = 1-flood(border_seg[:,:,0], (0, 0), connectivity=1).astype(np.uint8)
-                painted_part_G = 1-flood(border_seg[:,:,1], (0, 0), connectivity=1).astype(np.uint8)
-                painted_part_R = 1-flood(border_seg[:,:,2], (0, 0), connectivity=1).astype(np.uint8)
-                painted_part = painted_part_B + painted_part_G + painted_part_R
-                painted_part[painted_part!=0] = 1
-                mask = np.zeros_like(border_seg)
-                mask[painted_part == 1] = 1
-                mask = mask[1:-1,1:-1]
+                # every colored pixel is considered segmented
+                mask = 1 - (np.all(seg == [0, 0, 0], axis=-1).astype(np.uint8))
+                mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
                 masks.append(mask)
 
         self.temp_att_seg_mask = list(zip(templates, attentions, segments, masks))
@@ -206,7 +206,6 @@ class Segmentating:
         Args:
             callback_info (dictionary): dictionary that holds information about user actions
             color_info (dictionary): dictionary that holds information about color selection
-            verbose (int, optional): verbose level. Defaults to 0.
         """
         click_column = color_info['x']
         click_row = color_info['y']
@@ -284,6 +283,7 @@ class Segmentating:
         Args:
             mask_path (str): incomplate path of every mask
             result_image (numpy.ndarray): segmented image
+            painted_pixels (numpy.ndarray): segmented pixel coordinates
             verbose (int, optional): verbose level. Defaults to 0.
         """
         segment_colors = np.unique(result_image[np.where(painted_pixels == 1)], axis=0)
@@ -400,7 +400,7 @@ class Segmentating:
                     self.painted_pixels[line_image[:,:,0]==255] = 0
 
         if action_type == "template":
-            put_template_segments(self.raw_image, self.result_image, self.painted_pixels, self.temp_att_seg_mask)
+            put_template_segments(self.raw_image, self.result_image, self.painted_pixels, self.temp_att_seg_mask, self.threshold)
 
         previous_result_image, previous_segmented_image, previous_painted_pixels = ctrl_z_stack.pop()
         if np.any(np.equal(previous_result_image, self.result_image) == False): # there is a change

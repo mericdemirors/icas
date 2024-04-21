@@ -14,5 +14,5 @@ mask2 = cv2.imread("/home/mericdemirors/Pictures/pp2.png")
 
 
 sgmt = Segmentating("/home/mericdemirors/Pictures/araba", "superpixel",
-                    templates=[temp1, temp2], segments=[segment1, segment2], attentions=[attention1, attention2], masks=[mask1, mask2])
+                    templates=[temp1, temp2], threshold=0.1, segments=[segment1, segment2])#, attentions=[attention1, attention2], masks=[mask1, mask2])
 sgmt()

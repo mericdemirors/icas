@@ -213,6 +213,16 @@ def unfill(result_image, painted_pixels, raw_image, click_row, click_column, ver
     painted_pixels[selected_segment==1] = 0
 
 def put_template_segments(raw_image, result_image, painted_pixels, temp_att_seg_mask, threshold=None, verbose=0):
+    """automatically segments given templates
+
+    Args:
+        raw_image (numpy.ndarray): raw image to search templates on
+        result_image (numpy.ndarray): processing image
+        painted_pixels (numpy.ndarray): numpy matrix same size as result_image that indicates which pixels are filled
+        temp_att_seg_mask (list): list of templates, attentions(template masks), segments and masks(segment masks)
+        threshold (float, optional): max error rate to consider a template as matched, if None, best match is considered. Defaults to None.
+        verbose (int, optional): verbose level. Defaults to 0.
+    """
     for template, attention, segment, mask in temp_att_seg_mask:
         # attention is non zero where we want to compare with
         matches = cv2.matchTemplate(raw_image, template, mask=attention, method=cv2.TM_SQDIFF_NORMED)

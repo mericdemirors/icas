@@ -10,6 +10,5 @@ TO-TRY
 - edge+snake(kitapta 300-334 falan, 368'e de bak) dene
 
 TO-TIDY
-- function parameter ans descriptions
 
 TO-FIX
