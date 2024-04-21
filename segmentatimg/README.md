@@ -3,7 +3,6 @@
 Tool for segmentating images
 
 TO-ADD
-- automated attention and mask generator
 
 TO-TRY
 - edge sensitive SLIC/suerpixels

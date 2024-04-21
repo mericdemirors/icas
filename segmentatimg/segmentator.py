@@ -4,6 +4,8 @@ import os
 import numpy as np
 import threading
 from threading import Lock
+
+from skimage.morphology import flood
 lock = Lock()
 
 from helper_functions import *
@@ -33,31 +35,28 @@ class Segmentating:
         self.k = k
         self.color_importance = color_importance
 
-        # if attentions == [] and masks == []:
-        #     for (temp, seg) in list(zip(templates, segments)):
-        #         border_temp = cv2.copyMakeBorder(temp, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
-        #         selected_part_B = flood(border_temp[:,:,0], (0, 0), connectivity=1).astype(np.uint8)
-        #         selected_part_G = flood(border_temp[:,:,1], (0, 0), connectivity=1).astype(np.uint8)
-        #         selected_part_R = flood(border_temp[:,:,2], (0, 0), connectivity=1).astype(np.uint8)
-        #         selected_part = np.logical_and(selected_part_B, selected_part_G, selected_part_R)
-        #         att = np.ones_like(border_temp)
-        #         att[selected_part == 1]
-        #         att[:,:,0][selected_part==1] = border_temp[:,:,0][selected_part==1]
-        #         att[:,:,1][selected_part==1] = border_temp[:,:,1][selected_part==1]
-        #         att[:,:,2][selected_part==1] = border_temp[:,:,2][selected_part==1]
-        #         attentions.append(att[1:-1, 1:-1])
+        if attentions == [] and masks == []:
+            for (temp, seg) in list(zip(templates, segments)):
+                border_temp = cv2.copyMakeBorder(temp, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
+                ignored_part_B = flood(border_temp[:,:,0], (0, 0), connectivity=1).astype(np.uint8)
+                ignored_part_G = flood(border_temp[:,:,1], (0, 0), connectivity=1).astype(np.uint8)
+                ignored_part_R = flood(border_temp[:,:,2], (0, 0), connectivity=1).astype(np.uint8)
+                ignored_part = np.logical_and(ignored_part_B, ignored_part_G, ignored_part_R)
+                attention = np.ones_like(border_temp)
+                attention[ignored_part == 1] = 0
+                attention = attention[1:-1,1:-1]
+                attentions.append(attention)
 
-        #         border_seg = cv2.copyMakeBorder(seg, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
-        #         selected_part_B = flood(border_seg[:,:,0], (0, 0), connectivity=1).astype(np.uint8)
-        #         selected_part_G = flood(border_seg[:,:,1], (0, 0), connectivity=1).astype(np.uint8)
-        #         selected_part_R = flood(border_seg[:,:,2], (0, 0), connectivity=1).astype(np.uint8)
-        #         selected_part = np.logical_and(selected_part_B, selected_part_G, selected_part_R)
-        #         mask = np.ones_like(border_seg)
-        #         mask[selected_part == 1]
-        #         mask[:,:,0][selected_part==1] = border_seg[:,:,0][selected_part==1]
-        #         mask[:,:,1][selected_part==1] = border_seg[:,:,1][selected_part==1]
-        #         mask[:,:,2][selected_part==1] = border_seg[:,:,2][selected_part==1]
-        #         masks.append(mask[1:-1, 1:-1])
+                border_seg = cv2.copyMakeBorder(seg, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
+                painted_part_B = 1-flood(border_seg[:,:,0], (0, 0), connectivity=1).astype(np.uint8)
+                painted_part_G = 1-flood(border_seg[:,:,1], (0, 0), connectivity=1).astype(np.uint8)
+                painted_part_R = 1-flood(border_seg[:,:,2], (0, 0), connectivity=1).astype(np.uint8)
+                painted_part = painted_part_B + painted_part_G + painted_part_R
+                painted_part[painted_part!=0] = 1
+                mask = np.zeros_like(border_seg)
+                mask[painted_part == 1] = 1
+                mask = mask[1:-1,1:-1]
+                masks.append(mask)
 
         self.temp_att_seg_mask = list(zip(templates, attentions, segments, masks))
 
@@ -293,6 +292,7 @@ class Segmentating:
             indices = np.argwhere(np.all(result_image == color, axis=-1))
             mask = np.zeros_like(result_image)
             mask[indices[:, 0], indices[:, 1]] = [255,255,255]
+            mask[painted_pixels == 0] = [0,0,0]
             cv2.imwrite(mask_path + str(color) + ".png", mask)
 
     def process_keyboard_input(self, file_no, ctrl_z_stack, key, verbose=0):
