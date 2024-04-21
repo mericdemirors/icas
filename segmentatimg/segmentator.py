@@ -33,6 +33,7 @@ class Segmentating:
         self.k = k
         self.color_importance = color_importance
 
+        self.refresh_images = False
         self.empty_images()
 
         self.color_picker_image = cv2.imread(color_picker_image_path)
@@ -58,6 +59,7 @@ class Segmentating:
         self.orig_segmented_image = None
         self.orig_painted_pixels = None
         cv2.destroyAllWindows()
+    
     def reset_images(self):
         """resets object image attributes to originals
         """
@@ -65,6 +67,7 @@ class Segmentating:
         self.result_image = self.orig_result_image.copy()
         self.segmented_image = self.orig_segmented_image.copy()
         self.painted_pixels = self.orig_painted_pixels.copy()
+    
     def set_images(self, raw_image, orig_segmented_image):
         """sets object image attributes to given images
 
@@ -85,6 +88,19 @@ class Segmentating:
             self.painted_pixels = np.zeros(self.segmented_image.shape)
             self.orig_painted_pixels = np.zeros(self.segmented_image.shape)
         cv2.destroyAllWindows()
+
+    def display_images(self, file_no):
+        """refresh the image displays only if a change happend
+
+        Args:
+            file_no (int): image file number
+        """
+        if self.refresh_images:
+            cv2.imshow("Processed Image " + str(file_no), self.result_image)
+            if cv2.getWindowProperty("Segmented Image(Debug)", cv2.WND_PROP_VISIBLE) > 0:
+                cv2.imshow("Segmented Image(Debug)", (self.segmented_image).astype(np.uint8))
+                cv2.imshow("Painter Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
+            self.refresh_images = False
 
     def click_event_listener(self, event, x, y, flags, callback_info):
         """detects mouse inputs and manages information dictionary
@@ -251,7 +267,7 @@ class Segmentating:
             mask[indices[:, 0], indices[:, 1]] = [255,255,255]
             cv2.imwrite(mask_path + str(color) + ".png", mask)
 
-    def process_key(self, file_no, ctrl_z_stack, key, verbose=0):
+    def process_keyboard_input(self, file_no, ctrl_z_stack, key, verbose=0):
         """processes keyboard inputs
 
         Args:
@@ -277,17 +293,22 @@ class Segmentating:
             print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
             self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), self.result_image, verbose=verbose-1)
             return "save"
-        elif key == ord('z'): # ctrl + z last action
-            if len(ctrl_z_stack) > 0:
-                pass
-                # self.result_image, self.segmented_image, self.painted_pixels = ctrl_z_stack.pop()
-                # cv2.imshow("Processed Image " + str(file_no), self.result_image)
-        elif key == ord('r'): # reset all actions
-            print_verbose("r", "reseting image " + image_name, verbose=verbose-1)
-            #ctrl_z_stack.append((self.result_image.copy(), self.segmented_image.copy(), self.painted_pixels.copy()))
+        elif key == ord('z') and ctrl_z_stack: # reverse
+            self.refresh_images = True
+            self.result_image, self.segmented_image, self.painted_pixels = ctrl_z_stack.pop()
+        elif key == ord('r'): # reset
+            self.refresh_images = True
+            ctrl_z_stack.append((self.result_image.copy(), self.segmented_image.copy(), self.painted_pixels.copy()))
             self.reset_images()
+        elif key == ord('d'): # debug
+            if cv2.getWindowProperty("Segmented Image(Debug)", cv2.WND_PROP_VISIBLE) > 0:
+                cv2.destroyWindow("Segmented Image(Debug)")
+                cv2.destroyWindow("Painter Pixels(Debug)")
+            else:
+                cv2.imshow("Segmented Image(Debug)", (self.segmented_image).astype(np.uint8))
+                cv2.imshow("Painter Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
 
-    def process_color(self, color_info, previous_color):
+    def process_color_picker_input(self, color_info, previous_color):
         """selects color
 
         Args:
@@ -306,7 +327,7 @@ class Segmentating:
         else:
             return previous_color
 
-    def process_action(self, file_no, ctrl_z_stack, color, callback_info):
+    def take_action(self, file_no, ctrl_z_stack, color, callback_info):
         """processes taken action
 
         Args:
@@ -318,7 +339,7 @@ class Segmentating:
         Returns:
             tuple: previous result and painted pixel images
         """
-        # ctrl_z_stack.append((self.result_image.copy(), self.segmented_image.copy(), self.painted_pixels.copy()))
+        ctrl_z_stack.append((self.result_image.copy(), self.segmented_image.copy(), self.painted_pixels.copy()))
         
         if callback_info["continuous_filling"] or callback_info["continuous_unfilling"]: # if one of continuous modes is on
             click_column = callback_info['x']
@@ -329,11 +350,6 @@ class Segmentating:
             
             elif callback_info["continuous_unfilling"]:
                 unfill(self.result_image, self.painted_pixels, self.raw_image, click_row, click_column)
-
-            # previous_result_image, previous_segmented_image, previous_painted_pixels = ctrl_z_stack.pop()
-            # if np.any(np.equal(previous_result_image, self.result_image) == False): # means there isnt any change while continuously filling
-                # pass
-                #ctrl_z_stack.append((previous_result_image.copy(), previous_segmented_image.copy(), previous_painted_pixels.copy()))
 
         if callback_info['clicked']: # if a clicking action detected
             callback_info["clicked"] = False
@@ -354,9 +370,12 @@ class Segmentating:
                     self.segmented_image[line_image[:,:,0]==255] = 0
                     self.painted_pixels[line_image[:,:,0]==255] = 0
 
-        cv2.imshow("Processed Image " + str(file_no), self.result_image)
+        previous_result_image, previous_segmented_image, previous_painted_pixels = ctrl_z_stack.pop()
+        if np.any(np.equal(previous_result_image, self.result_image) == False): # there is a change
+            self.refresh_images = True
+            ctrl_z_stack.append((previous_result_image.copy(), previous_segmented_image.copy(), previous_painted_pixels.copy()))
 
-    def segment(self, file_no, verbose=0):
+    def segment_image(self, file_no, verbose=0):
         """segments given image and saves it to output folder
 
         Args:
@@ -386,14 +405,13 @@ class Segmentating:
         while True:
             key = cv2.waitKey(1)
             self.display_color_picker(callback_info, color_info)
-
-            action = self.process_key(file_no, ctrl_z_stack, key, verbose=0)
+            action = self.process_keyboard_input(file_no, ctrl_z_stack, key, verbose=0)
             if action:
                 return action
 
-            color = self.process_color(color_info, color)
-
-            self.process_action(file_no, ctrl_z_stack, color, callback_info)
+            color = self.process_color_picker_input(color_info, color)
+            self.take_action(file_no, ctrl_z_stack, color, callback_info)
+            self.display_images(file_no)
 
     def process(self, region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
         """function to segment images in a folder in order and save them to output folder
@@ -418,21 +436,17 @@ class Segmentating:
             # if files process is done start segmenting it
             if image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None:
                 raw_image, orig_segmented_image = self.segmented_image_dict[image_path]                
-                if self.raw_image is None:
-                    self.set_images(raw_image, orig_segmented_image)
-                return_code = self.segment(file_no, verbose=verbose-1)
+                self.empty_images()
+                self.set_images(raw_image, orig_segmented_image)
+                return_code = self.segment_image(file_no, verbose=verbose-1)
                 
-                if return_code == "quit": # q
-                    self.empty_images()
-                    self.thread_stop = True
-                    break
-                elif return_code == "next" or return_code == "save": # n or s
-                    self.empty_images()
+                if return_code == "next" or return_code == "save": # n or s
                     file_no = (file_no + 1)%len(self.files)
                 elif return_code == "previous": # p
-                    self.empty_images()
                     file_no = (file_no - 1)%len(self.files)
-        
+                elif return_code == "quit": # q
+                    break
+                
         self.thread_stop = True
         cv2.destroyAllWindows()
 

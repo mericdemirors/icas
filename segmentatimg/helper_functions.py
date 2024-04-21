@@ -229,8 +229,6 @@ def print_verbose(verbose_type, message, verbose=0):
         output = output + "[prev]  | " + message
     elif verbose_type == "s":
         output = output + "[save]  | " + message
-    elif verbose_type == "r":
-        output = output + "[reset] | " + message
     elif verbose_type == "e":
         output = output + "[error]    | " + message
         raise(ErrorException(output))
