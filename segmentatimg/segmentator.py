@@ -9,7 +9,7 @@ lock = Lock()
 from helper_functions import *
 
 class Segmentating:
-    def __init__(self, image_folder, method, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), region_size = 40, ruler = 30, k = 15, color_importance = 5, thread_range = 10, verbose=0):
+    def __init__(self, image_folder, method, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), region_size = 40, ruler = 30, k = 15, color_importance = 5, templates=[], attentions=[], segments=[], masks=[], thread_range = 10, verbose=0):
         """initializing segmenting object
 
         Args:
@@ -20,6 +20,7 @@ class Segmentating:
             ruler (int, optional): ruler parameter for cv2 superpixel. Defaults to 30.
             k (int, optional): k parameter for cv2 kmeans. Defaults to 15.
             color_importance (int, optional): color importance parameter for cv2 kmeans. Defaults to 5.
+            temp_att_seg_mask (dictionary): templates, template matching masks, segments and masks
             thread_range (int, optional): depth of image processings at previous and upcoming images on list. Defaults to 10.
             verbose (int, optional): verbose level. Defaults to 0.
         """
@@ -27,11 +28,38 @@ class Segmentating:
         self.files = sorted([os.path.join(self.image_folder, file) for file in os.listdir(self.image_folder)])
         self.method = method
         self.verbose = verbose
-
         self.region_size = region_size
         self.ruler = ruler
         self.k = k
         self.color_importance = color_importance
+
+        # if attentions == [] and masks == []:
+        #     for (temp, seg) in list(zip(templates, segments)):
+        #         border_temp = cv2.copyMakeBorder(temp, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
+        #         selected_part_B = flood(border_temp[:,:,0], (0, 0), connectivity=1).astype(np.uint8)
+        #         selected_part_G = flood(border_temp[:,:,1], (0, 0), connectivity=1).astype(np.uint8)
+        #         selected_part_R = flood(border_temp[:,:,2], (0, 0), connectivity=1).astype(np.uint8)
+        #         selected_part = np.logical_and(selected_part_B, selected_part_G, selected_part_R)
+        #         att = np.ones_like(border_temp)
+        #         att[selected_part == 1]
+        #         att[:,:,0][selected_part==1] = border_temp[:,:,0][selected_part==1]
+        #         att[:,:,1][selected_part==1] = border_temp[:,:,1][selected_part==1]
+        #         att[:,:,2][selected_part==1] = border_temp[:,:,2][selected_part==1]
+        #         attentions.append(att[1:-1, 1:-1])
+
+        #         border_seg = cv2.copyMakeBorder(seg, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
+        #         selected_part_B = flood(border_seg[:,:,0], (0, 0), connectivity=1).astype(np.uint8)
+        #         selected_part_G = flood(border_seg[:,:,1], (0, 0), connectivity=1).astype(np.uint8)
+        #         selected_part_R = flood(border_seg[:,:,2], (0, 0), connectivity=1).astype(np.uint8)
+        #         selected_part = np.logical_and(selected_part_B, selected_part_G, selected_part_R)
+        #         mask = np.ones_like(border_seg)
+        #         mask[selected_part == 1]
+        #         mask[:,:,0][selected_part==1] = border_seg[:,:,0][selected_part==1]
+        #         mask[:,:,1][selected_part==1] = border_seg[:,:,1][selected_part==1]
+        #         mask[:,:,2][selected_part==1] = border_seg[:,:,2][selected_part==1]
+        #         masks.append(mask[1:-1, 1:-1])
+
+        self.temp_att_seg_mask = list(zip(templates, attentions, segments, masks))
 
         self.refresh_images = False
         self.empty_images()
@@ -251,7 +279,7 @@ class Segmentating:
         thread.start()
         return thread
 
-    def save_masks(self, mask_path, result_image, verbose=0):
+    def save_masks(self, mask_path, result_image, painted_pixels, verbose=0):
         """saves each segment mask individualy
 
         Args:
@@ -259,7 +287,7 @@ class Segmentating:
             result_image (numpy.ndarray): segmented image
             verbose (int, optional): verbose level. Defaults to 0.
         """
-        segment_colors = np.unique(result_image[np.where(self.painted_pixels == 1)], axis=0)
+        segment_colors = np.unique(result_image[np.where(painted_pixels == 1)], axis=0)
         # for each unique color save a mask coded with its BGR value
         for color in segment_colors:
             indices = np.argwhere(np.all(result_image == color, axis=-1))
@@ -291,7 +319,7 @@ class Segmentating:
             return "previous"
         elif key == ord('s'): # save
             print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
-            self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), self.result_image, verbose=verbose-1)
+            self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), self.result_image, self.painted_pixels, verbose=verbose-1)
             return "save"
         elif key == ord('z') and ctrl_z_stack: # reverse
             self.refresh_images = True
@@ -307,6 +335,8 @@ class Segmentating:
             else:
                 cv2.imshow("Segmented Image(Debug)", (self.segmented_image).astype(np.uint8))
                 cv2.imshow("Painter Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
+        elif key == ord('t'): # template match
+            return "template"
 
     def process_color_picker_input(self, color_info, previous_color):
         """selects color
@@ -327,11 +357,10 @@ class Segmentating:
         else:
             return previous_color
 
-    def take_action(self, file_no, ctrl_z_stack, color, callback_info):
+    def take_action(self, ctrl_z_stack, color, callback_info, action_type=""):
         """processes taken action
 
         Args:
-            file_no (int): file number of image
             ctrl_z_stack (list): list of changes in case of reversing
             color (list): values of selected color
             callback_info (dictionary): contains selected action information
@@ -370,6 +399,9 @@ class Segmentating:
                     self.segmented_image[line_image[:,:,0]==255] = 0
                     self.painted_pixels[line_image[:,:,0]==255] = 0
 
+        if action_type == "template":
+            put_template_segments(self.raw_image, self.result_image, self.painted_pixels, self.temp_att_seg_mask)
+
         previous_result_image, previous_segmented_image, previous_painted_pixels = ctrl_z_stack.pop()
         if np.any(np.equal(previous_result_image, self.result_image) == False): # there is a change
             self.refresh_images = True
@@ -406,11 +438,11 @@ class Segmentating:
             key = cv2.waitKey(1)
             self.display_color_picker(callback_info, color_info)
             action = self.process_keyboard_input(file_no, ctrl_z_stack, key, verbose=0)
-            if action:
+            if action and action != "template":
                 return action
-
+            
             color = self.process_color_picker_input(color_info, color)
-            self.take_action(file_no, ctrl_z_stack, color, callback_info)
+            self.take_action(ctrl_z_stack, color, callback_info, action_type=action)
             self.display_images(file_no)
 
     def process(self, region_size=40, ruler=30, k=15, color_importance=5, verbose=0):

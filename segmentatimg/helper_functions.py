@@ -212,6 +212,33 @@ def unfill(result_image, painted_pixels, raw_image, click_row, click_column, ver
     # mark as not painted
     painted_pixels[selected_segment==1] = 0
 
+def put_template_segments(raw_image, result_image, painted_pixels, temp_att_seg_mask, threshold=None, verbose=0):
+    for template, attention, segment, mask in temp_att_seg_mask:
+        # attention is non zero where we want to compare with
+        matches = cv2.matchTemplate(raw_image, template, mask=attention, method=cv2.TM_SQDIFF_NORMED)
+        
+        if threshold:
+            loc = np.where(matches <= threshold)
+            loc = list(zip(loc[0], loc[1]))
+        else:
+            loc = [np.unravel_index(np.argmin(matches, axis=None), matches.shape)]
+
+        for r,c in loc:
+            # segment with expanded borders to match image size
+            scaled_segment = np.zeros_like(result_image)
+            scaled_segment[r:r+template.shape[0], c:c+template.shape[1]] = segment
+            # segments mask with expanded borders to match image size
+            scaled_segment_mask = np.zeros_like(result_image)
+            scaled_segment_mask[r:r+mask.shape[0], c:c+mask.shape[1]] = mask
+
+            # newly painted pixels with expanded borders to match image size
+            painted_pixel_mask = np.zeros_like(painted_pixels)
+            for i in range(3):
+                painted_pixel_mask[scaled_segment_mask[:,:,i]!=0] = 1
+
+            np.putmask(result_image, mask=scaled_segment_mask, values=scaled_segment)
+            np.putmask(painted_pixels, mask=painted_pixel_mask, values=np.ones_like(painted_pixels))
+
 def print_verbose(verbose_type, message, verbose=0):
     """Prints verbose messages
 

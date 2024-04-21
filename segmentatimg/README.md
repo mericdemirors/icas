@@ -3,7 +3,7 @@
 Tool for segmentating images
 
 TO-ADD
-- template matching ekle, eğer template uyumu varsa sağlanan maskeyi oraya koyup boya
+- automated attention and mask generator
 
 TO-TRY
 - edge sensitive SLIC/suerpixels
@@ -11,5 +11,6 @@ TO-TRY
 - edge+snake(kitapta 300-334 falan, 368'e de bak) dene
 
 TO-TIDY
+- function parameter ans descriptions
 
 TO-FIX
