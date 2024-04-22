@@ -134,6 +134,44 @@ def kmeans_segmentation(image_path, k, color_importance, verbose=0):
 
     return labels
 
+def slickmeans_segmentation(image_path, region_size, ruler, k, verbose=0):
+    """segmentation with first slic then kmeans to slic centers
+
+    Args:
+        image_path (str): path to image to segment
+        region_size (int): region_size parameter for superpixel
+        ruler (int): ruler parameter for superpixel
+        k (int): k parameter for opencv kmeans
+        verbose (int, optional): verbose level. Defaults to 0.
+
+    Returns:
+        numpy.ndarray: segmented image
+    """
+    image = cv2.imread(image_path)
+    image_lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+
+    slic = cv2.ximgproc.createSuperpixelSLIC(image_lab, algorithm=cv2.ximgproc.MSLIC, region_size=region_size, ruler=ruler)
+    slic.iterate()
+    
+    num_superpixels = slic.getNumberOfSuperpixels()
+    superpixel_features = np.zeros((num_superpixels, 5), dtype=np.float32)
+    slic_labels = slic.getLabels()
+
+    for i in range(num_superpixels):
+        locs = np.where(slic_labels == i)
+        center = np.mean(locs, axis=1)
+        values = np.mean(image_lab[locs], axis=0)
+        superpixel_features[i] = np.hstack((center, values))
+
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
+    _, labels, _ = cv2.kmeans(superpixel_features, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+    segmented_image = np.zeros_like(image).astype(np.int16)
+    for e,l in enumerate(labels):
+        segmented_image[np.where(slic_labels==e)] = l
+
+    return segmented_image[:,:,0]
+
 def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
     """segments image with selected segmentation process
 
@@ -155,6 +193,9 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
         result_image = superpixel_segmentation(image_path, region_size=region_size, ruler=ruler, verbose=verbose-1)
     elif method == "kmeans":
         result_image = kmeans_segmentation(image_path, k=k, color_importance=color_importance, verbose=verbose-1)
+    elif method == "slickmeans":
+        result_image = slickmeans_segmentation(image_path, region_size=region_size, ruler=ruler, k=k, verbose=verbose-1)
+
 
     return result_image
 
