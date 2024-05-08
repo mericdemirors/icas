@@ -22,10 +22,6 @@ selective search
 (https://www.geeksforgeeks.org/opencv-selective-search-for-object-detection/)
 (https://docs.opencv.org/4.x/d5/df0/group__ximgproc__segmentation.html)
 
-skimage.segmentation.inverse_gaussian_gradient
-skimage.segmentation.morphological_chan_vese
-skimage.segmentation.morphological_geodesic_active_contour
-
 TO-TIDY
 optimize flood/fill/erode/dilate processes with skimage/opencv functions
 
