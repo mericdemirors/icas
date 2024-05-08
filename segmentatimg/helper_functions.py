@@ -3,6 +3,7 @@ import time
 import numpy as np
 from skimage.morphology import flood_fill, flood
 from skimage.segmentation import chan_vese
+from skimage.segmentation import felzenszwalb
 
 from helper_exceptions import *
 
@@ -178,7 +179,7 @@ def chan_vase_segmentation(image_path, number_of_bins, verbose=0):
 
     Args:
         image_path (str): path to image to segment
-        number_of_bins (int): number of clusters to extract from chan vase method output
+        number_of_bins (int): number of segments to extract from chan vase method output
         verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
@@ -186,6 +187,8 @@ def chan_vase_segmentation(image_path, number_of_bins, verbose=0):
     """
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     cv_results = chan_vese(image, mu=0.25, lambda1=2, lambda2=1, tol=1e-3, max_num_iter=100, dt=0.5, init_level_set="checkerboard", extended_output=True)
+    
+    # transforming from float image to segment labels
     divider = (256/number_of_bins)
     result = cv_results[1]
     result = (result-result.min())/(result.max()-result.min())
@@ -194,7 +197,25 @@ def chan_vase_segmentation(image_path, number_of_bins, verbose=0):
 
     return result
 
-def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5, number_of_bins=20, verbose=0):
+def felzenszwalb_segmentation(image_path, segment_scale, sigma, min_segment_size, verbose=0):
+    """segmenting image with felzenszwalb segmentation
+
+    Args:
+        image_path (str): path to image to segment
+        segment_scale (int): higher value means larger segments
+        sigma (float): standard deviation) of Gaussian kernel used in preprocessing
+        min_segment_size (int): min size of a segment
+        verbose (int, optional): verbose level. Defaults to 0.
+
+    Returns:
+        numpy.ndarray: segmented image
+    """
+    image = cv2.imread(image_path)
+    segmented_image = felzenszwalb(image, scale=segment_scale, sigma=sigma, min_size=min_segment_size)
+    
+    return segmented_image + 1
+
+def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5, number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100, verbose=0):
     """segments image with selected segmentation process
 
     Args:
@@ -204,7 +225,7 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
         ruler (int, optional): ruler parameter for superpixel. Defaults to 30.
         k (int, optional): k parameter for opencv kmeans. Defaults to 15.
         color_importance (int, optional): importance of pixel colors proportional to pixels coordinates: _description_. Defaults to 5.
-        number_of_bins (int): number of clusters to extract from chan vase method output
+        number_of_bins (int): number of segments to extract from chan vase method output
         verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
@@ -220,13 +241,16 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
         result_image = slickmeans_segmentation(image_path, region_size=region_size, ruler=ruler, k=k, verbose=verbose-1)
     elif method == "chanvase":
         result_image = chan_vase_segmentation(image_path, number_of_bins=number_of_bins, verbose=verbose-1)
+    elif method == "felzenszwalb":
+        result_image = felzenszwalb_segmentation(image_path, segment_scale=segment_scale, sigma=sigma, min_segment_size=min_segment_size, verbose=verbose-1)
 
     # Below methods are not implemented because they are not suited for multiclass image segmentation tasks
     # But they could be use for singleclass similar object detection tasks
     # graph cut (https://github.com/opencv/opencv/blob/master/samples/python/grabcut.py)
     # watershed
     # contours
-    
+    # Below methods are not implemented because they are requiring more manual work than we ask
+    # skimage.segmentation.active_contour
 
     return result_image
 
