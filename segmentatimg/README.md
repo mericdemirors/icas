@@ -25,8 +25,6 @@ selective search
 skimage.segmentation.inverse_gaussian_gradient
 skimage.segmentation.morphological_chan_vese
 skimage.segmentation.morphological_geodesic_active_contour
-skimage.segmentation.quickshift
-skimage.segmentation.random_walker
 
 TO-TIDY
 optimize flood/fill/erode/dilate processes with skimage/opencv functions
