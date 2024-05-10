@@ -205,7 +205,7 @@ def felzenszwalb_segmentation(image_path, segment_scale, sigma, min_segment_size
     Args:
         image_path (str): path to image to segment
         segment_scale (int): higher value means larger segments
-        sigma (float): standard deviation) of Gaussian kernel used in preprocessing
+        sigma (float): standard deviation of Gaussian kernel used in preprocessing
         min_segment_size (int): min size of a segment
         verbose (int, optional): verbose level. Defaults to 0.
 
@@ -234,7 +234,31 @@ def quickshift_segmentation(image_path, segment_size, color_weight, verbose=0):
     
     return segmented_image + 1
 
-def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5, number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100, segment_size=100, color_weight=0.5, verbose=0):
+def graph_segmentation(image_path, k, min_segment_size, sigma, verbose=0):
+    """segmenting image with graph segmentation
+
+    Args:
+        image_path (str): path to image to segment
+        k (int): high values mean smooth few big segments, low values mean detailed finer segments
+        min_segment_size (int): min size of a segment
+        sigma (float): higher sigma means smoother segment edges, lower values preserve finer details and edges
+        verbose (int, optional): verbose level. Defaults to 0.
+
+    Returns:
+        numpy.ndarray: segmented image
+    """
+    image = cv2.imread(image_path)
+    
+    graph_segmentor = cv2.ximgproc.segmentation.createGraphSegmentation(sigma=sigma, k=k, min_size=min_segment_size)
+    labels = graph_segmentor.processImage(image)
+    labels = labels + 1
+
+    return labels
+
+def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5,
+                  number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
+                  segment_size=100, color_weight=0.5, 
+                  verbose=0):
     """segments image with selected segmentation process
 
     Args:
@@ -264,6 +288,8 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
         result_image = felzenszwalb_segmentation(image_path, segment_scale=segment_scale, sigma=sigma, min_segment_size=min_segment_size, verbose=verbose-1)
     elif method == "quickshift":
         result_image = quickshift_segmentation(image_path, segment_size=segment_size, color_weight=color_weight, verbose=verbose-1)
+    elif method == "graph":
+        result_image = graph_segmentation(image_path, k, min_segment_size, sigma, verbose=verbose-1)
 
     # Below methods are not implemented because they are not suited for multiclass image segmentation tasks
     # But they could be use for singleclass similar object detection tasks

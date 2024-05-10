@@ -17,11 +17,6 @@ grabcut
 (https://docs.opencv.org/3.4/d8/d83/tutorial_py_grabcut.html)
 (https://pyimagesearch.com/2020/07/27/opencv-grabcut-foreground-segmentation-and-extraction/)
 
-selective search
-(https://pyimagesearch.com/2020/06/29/opencv-selective-search-for-object-detection/)
-(https://www.geeksforgeeks.org/opencv-selective-search-for-object-detection/)
-(https://docs.opencv.org/4.x/d5/df0/group__ximgproc__segmentation.html)
-
 TO-TIDY
 optimize flood/fill/erode/dilate processes with skimage/opencv functions
 
