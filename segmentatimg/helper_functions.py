@@ -259,16 +259,23 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
                   number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
                   segment_size=100, color_weight=0.5, 
                   verbose=0):
-    """segments image with selected segmentation process
+    """segments image with selected segmentation process. Multiple same/similar meaning carrying parameters
+    has used to create a clear distinction between different segmentation techniques. Further inforamtion could
+    be obtained from directly each techniques descrtion.
 
     Args:
         method (str): type of segmentation proces
         image_path (str, optional): path to image to segment. Defaults to "".
         region_size (int, optional): region_size parameter for superpixel. Defaults to 40.
         ruler (int, optional): ruler parameter for superpixel. Defaults to 30.
-        k (int, optional): k parameter for opencv kmeans. Defaults to 15.
-        color_importance (int, optional): importance of pixel colors proportional to pixels coordinates: _description_. Defaults to 5.
+        k (int, optional): k parameter for opencv kmeans or graph segmentation. Defaults to 15.
+        color_importance (int, optional): importance of pixel colors proportional to pixels coordinates for kmeans. Defaults to 5.
         number_of_bins (int): number of segments to extract from chan vase method output
+        segment_scale (int): segment scale parameter for felzenszwalb. Defaults to 100.
+        sigma (float): standard deviation of Gaussian kernel in felzenszwalb or sigma parameter for graph segmentation. Defaults to 0.5.
+        min_segment_size (int): min size of a segment for felzenszwalb or graph. Defaults to 100.
+        segment_size (int): size of segments for felzenszwalb, quickshift or graph. Defaults to 100.
+        color_weight (float): weight of color to space in quickshift. Defaults to 0.5.
         verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
@@ -296,8 +303,6 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
     # graph cut (https://github.com/opencv/opencv/blob/master/samples/python/grabcut.py)
     # watershed
     # contours
-    # Below methods are not implemented because they are requiring more manual work than we ask
-    # skimage.segmentation.active_contour
 
     return result_image
 
