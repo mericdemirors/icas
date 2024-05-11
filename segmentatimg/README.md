@@ -18,3 +18,4 @@ optimize flood/fill/erode/dilate processes with skimage/opencv functions
 TO-FIX
 if grabcut is used, make thread range = 0
 optimize grabcut imshows, add comments and add a reverse key
+functionalize the repeating codes(get_segments in GrabcutSegmentor)

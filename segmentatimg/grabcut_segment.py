@@ -1,9 +1,12 @@
 # origin of the code: https://github.com/opencv/opencv/blob/master/samples/python/grabcut.py
 import numpy as np
 import cv2
+from skimage.morphology import flood_fill
 
-class App():
-    GREEN = [0,255,0]          # rectangle color
+from helper_exceptions import *
+
+class GrabcutSegmentor():
+    GREEN = [0,255,0]         # rectangle color
     DARK_GRAY = [40,40,40]    # PR BG
     LIGHT_GRAY = [200,200,200]# PR FG
     BLACK = [0,0,0]           # sure BG
@@ -74,6 +77,41 @@ class App():
     def on_trackbar_change(self, value):
             self.thickness = value
    
+    def get_segments(self):
+        foregrounds = self.mask.copy().astype(np.int32)
+        foregrounds[foregrounds==2] = 0
+        foregrounds[foregrounds!=0] = 1
+        foregrounds = foregrounds - 1 # -1 means background, 0 means foreground
+
+        # laabeling foreground starting from 1
+        segment_pixels = np.where(foregrounds == 0)
+        segment_id = 1
+        while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
+            ri, ci = segment_pixels[0][0], segment_pixels[1][0] # get a segment pixel
+            
+            foregrounds = flood_fill(foregrounds, (ri, ci), segment_id, connectivity=1, in_place=True) # floodfill segment
+            extracted_segment = np.array(foregrounds == foregrounds[ri][ci]).astype(np.int16) # extract only segment as binary
+            extracted_segment = cv2.dilate(extracted_segment, np.ones((3,3)), iterations=1) # expand segment borders by one pixel to remove edges
+            np.putmask(foregrounds, extracted_segment != 0, segment_id) # overwrite expanded segment to foregrounds
+
+            segment_id = segment_id + 1
+            segment_pixels = np.where(foregrounds == 0)
+
+        # laabeling backgroun continueing from last segment_id
+        segment_pixels = np.where(foregrounds == -1)
+        while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
+            ri, ci = segment_pixels[0][0], segment_pixels[1][0] # get a segment pixel
+            
+            foregrounds = flood_fill(foregrounds, (ri, ci), segment_id, connectivity=1, in_place=True) # floodfill segment
+            extracted_segment = np.array(foregrounds == foregrounds[ri][ci]).astype(np.int16) # extract only segment as binary
+            extracted_segment = cv2.dilate(extracted_segment, np.ones((3,3)), iterations=1) # expand segment borders by one pixel to remove edges
+            np.putmask(foregrounds, extracted_segment != 0, segment_id) # overwrite expanded segment to foregrounds
+
+            segment_id = segment_id + 1
+            segment_pixels = np.where(foregrounds == -1)
+
+        return foregrounds
+
     def run(self, filename):
         self.img = cv2.imread(cv2.samples.findFile(filename))
         self.original = self.img.copy()                             # original copy
@@ -96,21 +134,22 @@ class App():
 
             # key bindings
             if key == ord('q'):
-                # throw a custom exception to end program termination
-                6/0
+                raise(GrabcutSegmentorQuitException("GrabcutSegmentor received key q for quitting"))
             if key == ord('f'):
-                # return segmented image
-                6/0
-                break
+                labels = self.get_segments()
+                return labels
+            if key == ord('d'):
+                print()
             elif key == ord('r'): # reset everything
                 print("resetting \n")
-                self.rect = (0,0,1,1)
+                self.rect = (0,0,0,0)
                 self.display_rects = []
                 self.segment_rects = []
                 self.currently_drawing = False
                 self.currently_drawing_rect = False
                 self.rect_or_mask = -1
                 self.img = self.original.copy()
+                self.altered = self.original.copy()
                 self.mask = np.zeros(self.img.shape[:2], dtype = np.uint8) # mask initialized to PR_BG
                 self.display = np.zeros(self.img.shape, np.uint8)           # display image to be shown
             elif key == ord(' '): # segment the image
@@ -134,5 +173,5 @@ class App():
 
 if __name__ == '__main__':
     print(__doc__)
-    App().run("/home/mericdemirors/Pictures/araba/araba.jpg")
+    GrabcutSegmentor().run("/home/mericdemirors/Pictures/araba/araba.jpg")
     cv2.destroyAllWindows()
