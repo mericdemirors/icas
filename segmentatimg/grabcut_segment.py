@@ -113,7 +113,7 @@ class GrabcutSegmentor():
         return foregrounds
 
     def run(self, filename):
-        self.img = cv2.imread(cv2.samples.findFile(filename))
+        self.img = cv2.imread(filename)
         self.original = self.img.copy()                             # original copy
         self.altered = self.img.copy()                              # copy to store annotations
         self.mask = np.zeros(self.img.shape[:2], dtype = np.uint8)  # background initialized mask
@@ -134,8 +134,12 @@ class GrabcutSegmentor():
 
             # key bindings
             if key == ord('q'):
+                cv2.destroyWindow("display")
+                cv2.destroyWindow("annotation")
                 raise(GrabcutSegmentorQuitException("GrabcutSegmentor received key q for quitting"))
             if key == ord('f'):
+                cv2.destroyWindow("display")
+                cv2.destroyWindow("annotations")
                 labels = self.get_segments()
                 return labels
             if key == ord('d'):
@@ -170,8 +174,3 @@ class GrabcutSegmentor():
                     cv2.grabCut(self.original, self.mask, self.rect, bgdmodel, fgdmodel, 1, cv2.GC_INIT_WITH_MASK)
             mask2 = np.where((self.mask==1) + (self.mask==3), 255, 0).astype('uint8')
             self.display = cv2.bitwise_and(self.original, self.original, mask=mask2)
-
-if __name__ == '__main__':
-    print(__doc__)
-    GrabcutSegmentor().run("/home/mericdemirors/Pictures/araba/araba.jpg")
-    cv2.destroyAllWindows()

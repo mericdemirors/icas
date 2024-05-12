@@ -6,7 +6,7 @@ from skimage.segmentation import chan_vese
 from skimage.segmentation import felzenszwalb
 from skimage.segmentation import quickshift
 
-
+from grabcut_segment import GrabcutSegmentor
 from helper_exceptions import *
 
 # ! Not finished
@@ -255,6 +255,20 @@ def graph_segmentation(image_path, k, min_segment_size, sigma, verbose=0):
 
     return labels
 
+def grabcut_segmentation(image_path, verbose=0):
+    """segmenting image with interactive grabcut segmentation 
+
+    Args:
+        image_path (str): path to image to segment
+        verbose (int, optional): verbose level. Defaults to 0.
+
+    Returns:
+        numpy.ndarray: segmented image
+    """
+    gb = GrabcutSegmentor()
+    labels = gb.run(image_path)
+    return labels
+
 def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5,
                   number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
                   segment_size=100, color_weight=0.5, 
@@ -297,10 +311,11 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
         result_image = quickshift_segmentation(image_path, segment_size=segment_size, color_weight=color_weight, verbose=verbose-1)
     elif method == "graph":
         result_image = graph_segmentation(image_path, k, min_segment_size, sigma, verbose=verbose-1)
+    elif method == "grabcut":
+        result_image = grabcut_segmentation(image_path, verbose=verbose-1)
 
     # Below methods are not implemented because they are not suited for multiclass image segmentation tasks
     # But they could be use for singleclass similar object detection tasks
-    # graph cut (https://github.com/opencv/opencv/blob/master/samples/python/grabcut.py)
     # watershed
     # contours
 

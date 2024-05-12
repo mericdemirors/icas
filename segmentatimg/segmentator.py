@@ -407,7 +407,7 @@ class Segmentating:
             self.refresh_images = True
             ctrl_z_stack.append((previous_result_image.copy(), previous_segmented_image.copy(), previous_painted_pixels.copy()))
 
-    def segment_image(self, file_no, verbose=0):
+    def manual_segmenting(self, file_no, verbose=0):
         """segments given image and saves it to output folder
 
         Args:
@@ -470,7 +470,7 @@ class Segmentating:
                 raw_image, orig_segmented_image = self.segmented_image_dict[image_path]                
                 self.empty_images()
                 self.set_images(raw_image, orig_segmented_image)
-                return_code = self.segment_image(file_no, verbose=verbose-1)
+                return_code = self.manual_segmenting(file_no, verbose=verbose-1)
                 
                 if return_code == "next" or return_code == "save": # n or s
                     file_no = (file_no + 1)%len(self.files)
@@ -482,15 +482,43 @@ class Segmentating:
         self.thread_stop = True
         cv2.destroyAllWindows()
 
+    def grabcut_process(self, verbose=0):
+        file_no = 0
+        while 0 <= file_no < len(self.files):
+            image_path = self.files[file_no]
+
+            raw_image = cv2.imread(image_path)
+            orig_segmented_image = segment_image(self.method, image_path)
+            self.segmented_image_dict[image_path] = raw_image, orig_segmented_image
+
+            self.empty_images()
+            self.set_images(raw_image, orig_segmented_image)
+            return_code = self.manual_segmenting(file_no, verbose=verbose-1)
+            
+            if return_code == "next" or return_code == "save": # n or s
+                file_no = (file_no + 1)%len(self.files)
+            elif return_code == "previous": # p
+                file_no = (file_no - 1)%len(self.files)
+            elif return_code == "quit": # q
+                break
+                
+        cv2.destroyAllWindows()
+
     def __call__(self):
         """calling the object will start the main process and catch any possible exception during
         """
         try:
             os.makedirs(self.save_folder, exist_ok=True)
-            self.process(self.region_size, self.ruler, self.k, self.color_importance, verbose=self.verbose-1)
+            if self.method == "grabcut":
+                self.grabcut_process(self.verbose-1)
+            else:
+                self.process(self.region_size, self.ruler, self.k, self.color_importance, verbose=self.verbose-1)
         except ErrorException as ee:
             print(ee.message)
             exit(ee.error_code)
         except WrongTypeException as wte:
             print(wte.message)
             exit(wte.error_code)
+        except GrabcutSegmentorQuitException as gsqe:
+            print(gsqe.message)
+            exit(gsqe.error_code)
