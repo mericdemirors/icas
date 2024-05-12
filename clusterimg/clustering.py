@@ -81,11 +81,11 @@ class Clustering():
         valid_transfer = ["copy", "move"]
 
         if self.method not in valid_methods:
-            print_verbose("e", "invalid method type", verbose)
+            raise(InvalidMethodException("Invalid method: " + self.method))
         if self.option not in valid_options:
-            print_verbose("e", "invalid option type", verbose)
+            raise(InvalidOptionException("Invalid option: " + self.option))
         if self.transfer not in valid_transfer:
-            print_verbose("e", "invalid transfer type", verbose)
+            raise(InvalidTransferException("Invalid transfer: " + self.transfer))
 
     def interactive_threshold_selection(self, num_of_files=1000, verbose=0):
         """Lets user interactively select threshold
@@ -383,7 +383,7 @@ class Clustering():
         # creating result folder
         if self.option != "merge":
             if os.path.exists(self.result_container_folder) and not self.overwrite:
-                print_verbose("e", "no permission to overwrite", self.verbose)
+                raise(OverwritePermissionException("Overwriting permission not granted to overwrite " + self.result_container_folder))
             else:
                 if os.path.exists(self.result_container_folder):
                     shutil.rmtree(self.result_container_folder)
@@ -450,11 +450,10 @@ class Clustering():
         """
         try:
             self.process()
+        except (ErrorException, WrongTypeException, InvalidMethodException, InvalidOptionException, 
+                InvalidTransferException, OverwritePermissionException) as custom_e:
+            print(custom_e.message)
+            exit(custom_e.error_code)
         except FinishException as fe:
             print(fe.message)
-        except ErrorException as ee:
-            print(ee.message)
-            exit(ee.error_code)
-        except WrongTypeException as wte:
-            print(wte.message)
-            exit(wte.error_code)
+            exit(fe.error_code)

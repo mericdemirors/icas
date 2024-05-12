@@ -7,7 +7,6 @@ TO-ADD
 - C/C++/CUDA optimization
 - Machine and Deep Learning
 - thread the interactive threshold selection
-- custom exceptions for possible error cases
 
 TO-TRY
 
