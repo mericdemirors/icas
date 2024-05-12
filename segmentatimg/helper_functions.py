@@ -266,7 +266,7 @@ def grabcut_segmentation(image_path, verbose=0):
         numpy.ndarray: segmented image
     """
     gb = GrabcutSegmentor()
-    labels = gb.run(image_path)
+    labels = gb.segment(image_path)
     return labels
 
 def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5,

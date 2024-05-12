@@ -483,6 +483,11 @@ class Segmentating:
         cv2.destroyAllWindows()
 
     def grabcut_process(self, verbose=0):
+        """seperated process function for grabcut method since interactive grabcut segmentationis doen require threads
+
+        Args:
+            verbose (int, optional): verbose level. Defaults to 0.
+        """
         file_no = 0
         while 0 <= file_no < len(self.files):
             image_path = self.files[file_no]
