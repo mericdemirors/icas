@@ -2,11 +2,8 @@ import os
 import shutil
 import datetime
 
-import cv2
 import numpy as np
-from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
-from skimage.metrics import structural_similarity
 import mplcursors
 
 from itertools import combinations
