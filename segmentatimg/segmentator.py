@@ -1,5 +1,4 @@
 import cv2
-import time
 import os
 import numpy as np
 import threading
@@ -41,6 +40,11 @@ class Segmentating:
         self.color_importance = color_importance
         self.threshold = threshold
 
+        if len(templates) != len(segments):
+            raise(NotMatchingTemplatesAndSegmentsException("length of templates("+str(len(templates))+") and segments("+str(len(segments))+") are not matching"))
+        if len(attentions) != len(masks):
+            raise(NotMatchingAttentionAndMasksException("length of attentions("+str(len(attentions))+") and masks("+str(len(masks))+") are not matching"))
+
         if attentions == [] and masks == []:
             for (temp, seg) in list(zip(templates, segments)):
                 border_temp = cv2.copyMakeBorder(temp, 1,1,1,1, cv2.BORDER_CONSTANT, value=[0,0,0])
@@ -57,7 +61,7 @@ class Segmentating:
                 mask = 1 - (np.all(seg == [0, 0, 0], axis=-1).astype(np.uint8))
                 mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
                 masks.append(mask)
-
+        
         self.temp_att_seg_mask = list(zip(templates, attentions, segments, masks))
 
         self.refresh_images = False
@@ -65,7 +69,7 @@ class Segmentating:
 
         self.color_picker_image = cv2.imread(color_picker_image_path)
         if self.color_picker_image is None:
-            print_verbose("e", "No color picking image passed", verbose=verbose-1)
+            raise(ColorPickerException("No color_picker_image loaded"))
 
         base_folder, images_folder_name = os.path.split(self.image_folder)
         self.save_folder = os.path.join(base_folder, images_folder_name + "_segmented")
@@ -289,11 +293,12 @@ class Segmentating:
         segment_colors = np.unique(result_image[np.where(painted_pixels == 1)], axis=0)
         # for each unique color save a mask coded with its BGR value
         for color in segment_colors:
-            indices = np.argwhere(np.all(result_image == color, axis=-1))
-            mask = np.zeros_like(result_image)
-            mask[indices[:, 0], indices[:, 1]] = [255,255,255]
-            mask[painted_pixels == 0] = [0,0,0]
-            cv2.imwrite(mask_path + str(color) + ".png", mask)
+            if not np.array_equal(color, np.array([0,0,0])):
+                indices = np.argwhere(np.all(result_image == color, axis=-1))
+                mask = np.zeros_like(result_image)
+                mask[indices[:, 0], indices[:, 1]] = [255,255,255]
+                mask[painted_pixels == 0] = [0,0,0]
+                cv2.imwrite(mask_path + "(R:{},G:{},B:{})".format(color[2], color[1], color[0]) + ".png", mask)
 
     def process_keyboard_input(self, file_no, ctrl_z_stack, key, verbose=0):
         """processes keyboard inputs
@@ -319,7 +324,7 @@ class Segmentating:
             return "previous"
         elif key == ord('s'): # save
             print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
-            self.save_masks(os.path.join(self.save_folder, image_name + "_mask_"), self.result_image, self.painted_pixels, verbose=verbose-1)
+            self.save_masks(os.path.join(self.save_folder, image_name[:image_name.rindex(".")] + "_mask_"), self.result_image, self.painted_pixels, verbose=verbose-1)
             return "save"
         elif key == ord('z') and ctrl_z_stack: # reverse
             self.refresh_images = True
@@ -518,12 +523,8 @@ class Segmentating:
                 self.grabcut_process(self.verbose-1)
             else:
                 self.process(self.region_size, self.ruler, self.k, self.color_importance, verbose=self.verbose-1)
-        except ErrorException as ee:
-            print(ee.message)
-            exit(ee.error_code)
-        except WrongTypeException as wte:
-            print(wte.message)
-            exit(wte.error_code)
-        except GrabcutSegmentorQuitException as gsqe:
-            print(gsqe.message)
-            exit(gsqe.error_code)
+        except (ErrorException, WrongTypeException, GrabcutSegmentorQuitException, ColorPickerException,
+                NotMatchingTemplatesAndSegmentsException, NotMatchingAttentionAndMasksException) as custom_e:
+            self.thread_stop = True
+            print(custom_e.message)
+            exit(custom_e.error_code)

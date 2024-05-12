@@ -13,6 +13,6 @@ attention2 = cv2.imread("/home/mericdemirors/Pictures/att2.png")
 mask2 = cv2.imread("/home/mericdemirors/Pictures/pp2.png")
 
 
-sgmt = Segmentating("/home/mericdemirors/Pictures/titles", "slickmeans",
+sgmt = Segmentating("/home/mericdemirors/Pictures/titles", "superpixel",
                     templates=[temp1, temp2], threshold=0.1, segments=[segment1, segment2])#, attentions=[attention1, attention2], masks=[mask1, mask2])
 sgmt()

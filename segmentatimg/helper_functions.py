@@ -313,7 +313,8 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
         result_image = graph_segmentation(image_path, k, min_segment_size, sigma, verbose=verbose-1)
     elif method == "grabcut":
         result_image = grabcut_segmentation(image_path, verbose=verbose-1)
-
+    else:
+        raise(InvalidMethodException("Invalid method: " + method))
     # Below methods are not implemented because they are not suited for multiclass image segmentation tasks
     # But they could be use for singleclass similar object detection tasks
     # watershed
@@ -430,10 +431,10 @@ def print_verbose(verbose_type, message, verbose=0):
     elif verbose_type == "s":
         output = output + "[save]  | " + message
     elif verbose_type == "e":
-        output = output + "[error]    | " + message
+        output = output + "[error] | " + message
         raise(ErrorException(output))
     else:
-        output = output + "[wrong vt] | wrong verbose type"
+        output = output + "[vt ex] | wrong verbose type"
         raise(WrongTypeException(output))
 
     print(output)
