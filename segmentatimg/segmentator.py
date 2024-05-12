@@ -26,7 +26,7 @@ class Segmentating:
             attentions (list, optional): template masks to where to pay attention, will be derived from templates if not provided. Defaults to [].
             segments (list, optional): segments to paint detected templates. Defaults to [].
             masks (list, optional): segment masks to where to paint, will be derived from segments if not provided. Defaults to [].
-            threshold (_type_, optional): _description_. Defaults to None.
+            threshold (float, optional): max error rate to consider a template as matched, if None, best match is considered. Defaults to None.
             thread_range (int, optional): depth of image processings at previous and upcoming images on list. Defaults to 10.
             verbose (int, optional): verbose level. Defaults to 0.
         """
