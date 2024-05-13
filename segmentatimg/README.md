@@ -8,6 +8,5 @@ TO-ADD
 TO-TRY
 
 TO-TIDY
-- optimize flood/fill/erode/dilate processes with skimage/opencv functions
 
 TO-FIX

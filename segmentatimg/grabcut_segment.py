@@ -179,6 +179,7 @@ class GrabcutSegmentor():
                 elif (self.rect_or_mask == 1):
                     # grabcut with mask
                     cv2.grabCut(self.original, self.mask, self.rect, bgdmodel, fgdmodel, 1, cv2.GC_INIT_WITH_MASK)
+            
             foreground = np.where((self.mask==1) + (self.mask==3), 255, 0).astype(np.uint8)
             self.display = self.original.copy()
             self.display[foreground == 0] = 0

@@ -3,9 +3,9 @@
 Tool for clustering mixed images
 
 TO-ADD
+- Deep Learning
 - openmp
 - C/C++/CUDA optimization
-- Deep Learning
 
 TO-TRY
 
