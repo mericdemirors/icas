@@ -9,55 +9,25 @@ from skimage.segmentation import quickshift
 from grabcut_segment import GrabcutSegmentor
 from helper_exceptions import *
 
-# ! Not finished
-def edge_segmentation(image_path, verbose=0):
-    """segments image with opencv canny edge detection
-
-    Args:
-        image_path (str): path to image to segment
-        verbose (int, optional): verbose level. Defaults to 0.
-
-    Returns:
-        numpy.ndarray: segmented image
-    """
-    image_to_process = cv2.imread(image_path)
-    edge_image = cv2.Canny(image_to_process, 0, 50, 150)
-
-    # individual edge islands
-    kernels = [ # -1 means it should be background, 1 means it should be edge, 0 means ignore
-    np.array(([-1, -1, -1],[-1, 0, -1],[-1, -1, -1]), dtype="int"),
-    np.array([[-1, -1, -1, -1],[-1, 0, 0, -1],[-1, 0, 0, -1],[-1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1],[-1, 0, 0, 0, -1],[-1, 0, 0, 0, -1],[-1, 0, 0, 0, -1],[-1, -1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1, -1],[-1, 0, 0, 0, 0, -1],[-1, 0, 0, 0, 0, -1],[-1, 0, 0, 0, 0, -1],[-1, 0, 0, 0, 0, -1],[-1, -1, -1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1],[-1,  0, -1],[-1,  0, -1],[-1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1],[-1,  0,  0, -1],[-1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1],[-1,  0,  0,  0, -1],[-1, -1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1],[-1,  0, -1],[-1,  0, -1],[-1,  0, -1],[-1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1],[-1,  0,  0,  0, -1],[-1,  0,  0,  0, -1],[-1, -1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1],[-1,  0,  0, -1],[-1,  0,  0, -1],[-1,  0,  0, -1],[-1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1, -1],[-1,  0,  0,  0,  0, -1],[-1, -1, -1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1],[-1,  0, -1],[-1,  0, -1],[-1,  0, -1],[-1,  0, -1],[-1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1, -1],[-1,  0,  0,  0,  0, -1],[-1,  0,  0,  0,  0, -1],[-1, -1, -1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1],[-1,  0,  0, -1],[-1,  0,  0, -1],[-1,  0,  0, -1],[-1,  0,  0, -1],[-1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1, -1],[-1,  0,  0,  0,  0, -1],[-1,  0,  0,  0,  0, -1],[-1,  0,  0,  0,  0, -1],[-1, -1, -1, -1, -1, -1]], dtype="int"),
-    np.array([[-1, -1, -1, -1, -1],[-1,  0,  0,  0, -1],[-1,  0,  0,  0, -1],[-1,  0,  0,  0, -1],[-1,  0,  0,  0, -1],[-1, -1, -1, -1, -1]], dtype="int"),
-    ]
-
-    # surround image with edge so that each background is enclosed with edges
-    edge_image = cv2.copyMakeBorder(edge_image, 1,1,1,1, cv2.BORDER_CONSTANT, value=255)
-
-    # hit or miss kernels over detected edges to remove alone edge islands
-    for ke in kernels:
-        detected_islands = cv2.morphologyEx(edge_image, cv2.MORPH_HITMISS, ke, anchor=(0,0), iterations=1)     
-        detected_islands_xys = np.where(detected_islands == 255)
-        for (x,y) in list(zip(detected_islands_xys[0], detected_islands_xys[1])):
-            edge_image[x:x+ke.shape[0], y:y+ke.shape[1]] = 0
-
+def edge_segmentation(image_path, edge_th, bilateral_d, sigmaColor, sigmaSpace, templateWindowSize, searchWindowSize, h, hColor, verbose=0):
+    image = cv2.imread(image_path)
+    bilateral = cv2.bilateralFilter(image, d=bilateral_d, sigmaColor=sigmaColor, sigmaSpace=sigmaSpace)
+    preprocessed = cv2.fastNlMeansDenoisingColored(bilateral, templateWindowSize=templateWindowSize, searchWindowSize=searchWindowSize, h=h, hColor=hColor)
     
-    # now -1 means edge (needed for segmenting backgrounds)
-    edge_image = edge_image.astype(np.int16)
-    edge_image[edge_image == 255] = -1
+    gradient_x = cv2.Sobel(preprocessed, cv2.CV_64F, 1, 0, ksize=3)
+    gradient_y = cv2.Sobel(preprocessed, cv2.CV_64F, 0, 1, ksize=3)
+    gradient_magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
 
+    gradient_magnitude = cv2.normalize(gradient_magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.int16)
+    edge_image = (gradient_magnitude[:,:,0] + gradient_magnitude[:,:,1] + gradient_magnitude[:,:,2])/3
+
+    edge_image[edge_image > edge_th] = 255
+    edge_image[edge_image < edge_th] = 0
+
+    edge_image = cv2.dilate(edge_image, np.ones((3,3)), iterations=1)
+    edge_image = cv2.erode(edge_image, np.ones((3,3)), iterations=1)
+    
+    edge_image[edge_image > edge_th] = -1
     segment_pixels = np.where(edge_image == 0)
     segment_id = 1
 
@@ -71,10 +41,11 @@ def edge_segmentation(image_path, verbose=0):
 
         segment_id = segment_id + 1
         segment_pixels = np.where(edge_image == 0)
-
+    
     edge_image[edge_image == -1] = 0 # now 0 means edge
-    edge_image = edge_image[1:edge_image.shape[0]-1, 1:edge_image.shape[1]-1] # remove the added border
-    return edge_image.astype(np.int16)
+    edge_image = edge_image.astype(np.int16)
+    
+    return edge_image
 
 def superpixel_segmentation(image_path, region_size, ruler, verbose=0):
     """segments image with opencv superpixel
@@ -269,10 +240,10 @@ def grabcut_segmentation(image_path, verbose=0):
     labels = gb.segment(image_path)
     return labels
 
-def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_importance=5,
-                  number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
-                  segment_size=100, color_weight=0.5, 
-                  verbose=0):
+def segment_image(method, image_path="", edge_th = 60, bilateral_d = 7, sigmaColor = 100, sigmaSpace = 100,
+                  templateWindowSize = 7, searchWindowSize = 21, h = 10, hColor = 10, region_size=40, ruler=30,
+                  k=15, color_importance=5, number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
+                  segment_size=100, color_weight=0.5, verbose=0):
     """segments image with selected segmentation process. Multiple same/similar meaning carrying parameters
     has used to create a clear distinction between different segmentation techniques. Further inforamtion could
     be obtained from directly each techniques descrtion.
@@ -280,6 +251,14 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
     Args:
         method (str): type of segmentation proces
         image_path (str, optional): path to image to segment. Defaults to "".
+        edge_th (int, optional): threshold to consider a pixel as edge. Defaults to 60.
+        bilateral_d (int, optional): window size for cv2.bilateral. Defaults to 7.
+        sigmaColor (int, optional): color strength for cv2.bilateral. Defaults to 100.
+        sigmaSpace (int, optional): distance strength for cv2.bilateral. Defaults to 100.
+        templateWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColored. Defaults to 7.
+        searchWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColored. Defaults to 21.
+        h (int, optional): noise remove strenght for cv2.fastNlMeansDenoisingColored. Defaults to 10.
+        hColor (int, optional): color noise remove strenght for cv2.fastNlMeansDenoisingColored. Defaults to 10.
         region_size (int, optional): region_size parameter for superpixel. Defaults to 40.
         ruler (int, optional): ruler parameter for superpixel. Defaults to 30.
         k (int, optional): k parameter for opencv kmeans or graph segmentation. Defaults to 15.
@@ -296,7 +275,7 @@ def segment_image(method, image_path="", region_size=40, ruler=30, k=15, color_i
         numpy.ndarray: segmented image, segment ids start from 1, edges between segments are 0 if exist
     """
     if method == "edge":
-        result_image = edge_segmentation(image_path, verbose=verbose-1)
+        result_image = edge_segmentation(image_path, edge_th, bilateral_d, sigmaColor, sigmaSpace, templateWindowSize, searchWindowSize, h, hColor, verbose=verbose-1)
     elif method == "superpixel":
         result_image = superpixel_segmentation(image_path, region_size=region_size, ruler=ruler, verbose=verbose-1)
     elif method == "kmeans":

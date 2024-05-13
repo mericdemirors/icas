@@ -474,7 +474,7 @@ class Segmentating:
                 self.threads[file_no] = thread
 
             # if files process is done start segmenting it
-            if image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and self.segmented_image_dict[image_path][1] != "thread error occured":
+            if image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and type(self.segmented_image_dict[image_path][1]) != str:
                 raw_image, orig_segmented_image = self.segmented_image_dict[image_path]                
                 self.empty_images()
                 self.set_images(raw_image, orig_segmented_image)
@@ -486,7 +486,7 @@ class Segmentating:
                     file_no = (file_no - 1)%len(self.files)
                 elif return_code == "quit": # q
                     break
-            elif image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and self.segmented_image_dict[image_path][1] == "thread error occured":
+            elif image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and type(self.segmented_image_dict[image_path][1]) == str:
                 thread.join()
                 exception = self.segmented_image_dict[image_path][0]
                 raise(ThreadProcessException("During thread processes following Exception raised with error code " + str(exception.error_code) +":\n" + str(exception) + ": " + exception.message))
