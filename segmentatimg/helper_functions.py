@@ -10,6 +10,23 @@ from grabcut_segment import GrabcutSegmentor
 from helper_exceptions import *
 
 def edge_segmentation(image_path, edge_th, bilateral_d, sigmaColor, sigmaSpace, templateWindowSize, searchWindowSize, h, hColor, verbose=0):
+    """_summary_
+
+    Args:
+        image_path (str): path to image to segment
+        edge_th (int, optional): threshold to consider a pixel as edge
+        bilateral_d (int, optional): window size for cv2.bilatera
+        sigmaColor (int, optional): color strength for cv2.bilateral
+        sigmaSpace (int, optional): distance strength for cv2.bilateral
+        templateWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColore
+        searchWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColored
+        h (int, optional): noise remove strenght for cv2.fastNlMeansDenoisingColored
+        hColor (int, optional): color noise remove strenght for cv2.fastNlMeansDenoisingColored
+        verbose (int, optional): verbose level. Defaults to 0.
+
+    Returns:
+        numpy.ndarray: segmented image
+    """
     image = cv2.imread(image_path)
     bilateral = cv2.bilateralFilter(image, d=bilateral_d, sigmaColor=sigmaColor, sigmaSpace=sigmaSpace)
     preprocessed = cv2.fastNlMeansDenoisingColored(bilateral, templateWindowSize=templateWindowSize, searchWindowSize=searchWindowSize, h=h, hColor=hColor)
@@ -240,7 +257,7 @@ def grabcut_segmentation(image_path, verbose=0):
     labels = gb.segment(image_path)
     return labels
 
-def segment_image(method, image_path="", edge_th = 60, bilateral_d = 7, sigmaColor = 100, sigmaSpace = 100,
+def segment_image(image_path="", method="", edge_th = 60, bilateral_d = 7, sigmaColor = 100, sigmaSpace = 100,
                   templateWindowSize = 7, searchWindowSize = 21, h = 10, hColor = 10, region_size=40, ruler=30,
                   k=15, color_importance=5, number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
                   segment_size=100, color_weight=0.5, verbose=0):
@@ -249,8 +266,8 @@ def segment_image(method, image_path="", edge_th = 60, bilateral_d = 7, sigmaCol
     be obtained from directly each techniques descrtion.
 
     Args:
-        method (str): type of segmentation proces
         image_path (str, optional): path to image to segment. Defaults to "".
+        method (str): type of segmentation proces
         edge_th (int, optional): threshold to consider a pixel as edge. Defaults to 60.
         bilateral_d (int, optional): window size for cv2.bilateral. Defaults to 7.
         sigmaColor (int, optional): color strength for cv2.bilateral. Defaults to 100.

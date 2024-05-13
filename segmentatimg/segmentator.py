@@ -1,4 +1,5 @@
 import os
+import inspect
 import threading
 
 import cv2
@@ -10,35 +11,49 @@ lock = Lock()
 from helper_functions import *
 
 class Segmentating:
-    def __init__(self, image_folder, method, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), region_size = 40, ruler = 30, k = 15, color_importance = 5, templates=[], attentions=[], segments=[], masks=[], threshold=None, thread_range = 10, verbose=0):
+    def __init__(self, image_folder, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),
+                 method="", templates=[], attentions=[], segments=[], masks=[], thread_range=10, template_threshold=None, edge_th = 60,
+                 bilateral_d = 7, sigmaColor = 100, sigmaSpace = 100, templateWindowSize = 7, searchWindowSize = 21, h = 10, hColor = 10,
+                 region_size=40, ruler=30, k=15, color_importance=5, number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
+                 segment_size=100, color_weight=0.5, verbose=0):
         """initializing segmenting object
 
         Args:
             image_folder (str): path to images
-            method (str): segmentation method
             color_picker_image_path (str): path to color picking image            
-            region_size (int, optional): regions_size parameter for cv2 superpixel. Defaults to 40.
-            ruler (int, optional): ruler parameter for cv2 superpixel. Defaults to 30.
-            k (int, optional): k parameter for cv2 kmeans. Defaults to 15.
-            color_importance (int, optional): color importance parameter for cv2 kmeans. Defaults to 5.
+            method (str): segmentation method
             templates (list, optional): templates to search in raw images. Defaults to [].
             attentions (list, optional): template masks to where to pay attention, will be derived from templates if not provided. Defaults to [].
             segments (list, optional): segments to paint detected templates. Defaults to [].
             masks (list, optional): segment masks to where to paint, will be derived from segments if not provided. Defaults to [].
-            threshold (float, optional): max error rate to consider a template as matched, if None, best match is considered. Defaults to None.
             thread_range (int, optional): depth of image processings at previous and upcoming images on list. Defaults to 10.
+            template_threshold (float, optional): max error rate to consider a template as matched, if None, best match is considered. Defaults to None.
+                
+            edge_th (int, optional): threshold to consider a pixel as edge. Defaults to 60.
+            bilateral_d (int, optional): window size for cv2.bilateral. Defaults to 7.
+            sigmaColor (int, optional): color strength for cv2.bilateral. Defaults to 100.
+            sigmaSpace (int, optional): distance strength for cv2.bilateral. Defaults to 100.
+            templateWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColored. Defaults to 7.
+            searchWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColored. Defaults to 21.
+            h (int, optional): noise remove strenght for cv2.fastNlMeansDenoisingColored. Defaults to 10.
+            hColor (int, optional): color noise remove strenght for cv2.fastNlMeansDenoisingColored. Defaults to 10.
+            region_size (int, optional): region_size parameter for superpixel. Defaults to 40.
+            ruler (int, optional): ruler parameter for superpixel. Defaults to 30.
+            k (int, optional): k parameter for opencv kmeans or graph segmentation. Defaults to 15.
+            color_importance (int, optional): importance of pixel colors proportional to pixels coordinates for kmeans. Defaults to 5.
+            number_of_bins (int): number of segments to extract from chan vase method output
+            segment_scale (int): segment scale parameter for felzenszwalb. Defaults to 100.
+            sigma (float): standard deviation of Gaussian kernel in felzenszwalb or sigma parameter for graph segmentation. Defaults to 0.5.
+            min_segment_size (int): min size of a segment for felzenszwalb or graph. Defaults to 100.
+            segment_size (int): size of segments for felzenszwalb, quickshift or graph. Defaults to 100.
+            color_weight (float): weight of color to space in quickshift. Defaults to 0.5.
             verbose (int, optional): verbose level. Defaults to 0.
         """
-
         self.image_folder = image_folder
         self.files = sorted([os.path.join(self.image_folder, file) for file in os.listdir(self.image_folder)])
         self.method = method
         self.verbose = verbose
-        self.region_size = region_size
-        self.ruler = ruler
-        self.k = k
-        self.color_importance = color_importance
-        self.threshold = threshold
+        self.template_threshold = template_threshold
         self.threads = {}
 
         if len(templates) != len(segments):
@@ -78,6 +93,9 @@ class Segmentating:
         self.segmented_image_dict = {} # distionary to save thread processing results
         self.thread_range = thread_range # number of images to prepare at both left and right side of current index
         self.thread_stop = False # indicates when to stop threads
+
+        self.segment_image_parameters = locals()
+        self.segment_image_parameters = {k: v for k, v in self.segment_image_parameters.items() if k in inspect.signature(segment_image).parameters}
 
     def empty_images(self):
         """empties object image attributes
@@ -231,30 +249,22 @@ class Segmentating:
 
         cv2.imshow("Color Picker", color_picker_image_display)
 
-    def create_thread(self, file_no, region_size, ruler, k, color_importance, verbose=0):
+    def create_thread(self, file_no, verbose=0):
         """function to start thread processing and return thread
 
         Args:
             file_no (int): index of current image
-            region_size (int): region_size parameter for superpixel
-            ruler (int): ruler parameter for superpixel
-            k (int): k parameter for opencv kmeans
-            color_importance (int): importance of pixel colors proportional to pixels coordinates
             verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
             threading.Thread: thread that is created for processing
         """
 
-        def pass_image_to_thread(file_no, region_size, ruler, k, color_importance, verbose=0):
+        def pass_image_to_thread(file_no, verbose=0):
             """Function to process segment images with thread
 
             Args:
                 file_no (int): index of current image
-                region_size (int): region_size parameter for superpixel
-                ruler (int): ruler parameter for superpixel
-                k (int): k parameter for opencv kmeans
-                color_importance (int): importance of pixel colors proportional to pixels coordinates
                 verbose (int, optional): verbose level. Defaults to 0.
             """
             try:
@@ -275,13 +285,13 @@ class Segmentating:
                     lock.acquire()
                     if self.segmented_image_dict[image_path] is None: 
                         raw_image = cv2.imread(image_path)
-                        segmented_image = segment_image(method=self.method, image_path=image_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
+                        segmented_image = segment_image(image_path, **self.segment_image_parameters)
                         self.segmented_image_dict[image_path] = (raw_image, segmented_image)
                     lock.release()
             except Exception as e:
                 self.segmented_image_dict[image_path] = (e, "thread error occured")
                 self.thread_stop = True
-        thread = threading.Thread(target=pass_image_to_thread, args=(file_no, region_size, ruler, k, color_importance, verbose-1), daemon=True)
+        thread = threading.Thread(target=pass_image_to_thread, args=(file_no, verbose-1), daemon=True)
         thread.start()
         return thread
 
@@ -373,6 +383,7 @@ class Segmentating:
             ctrl_z_stack (list): list of changes in case of reversing
             color (list): values of selected color
             callback_info (dictionary): contains selected action information
+            action_type (str): action to take
 
         Returns:
             tuple: previous result and painted pixel images
@@ -409,7 +420,7 @@ class Segmentating:
                     self.painted_pixels[line_image[:,:,0]==255] = 0
 
         if action_type == "template":
-            put_template_segments(self.raw_image, self.result_image, self.painted_pixels, self.temp_att_seg_mask, self.threshold)
+            put_template_segments(self.raw_image, self.result_image, self.painted_pixels, self.temp_att_seg_mask, self.template_threshold)
 
         previous_result_image, previous_segmented_image, previous_painted_pixels = ctrl_z_stack.pop()
         if np.any(np.equal(previous_result_image, self.result_image) == False): # there is a change
@@ -454,14 +465,10 @@ class Segmentating:
             self.take_action(ctrl_z_stack, color, callback_info, action_type=action)
             self.display_images(file_no)
 
-    def process(self, region_size=40, ruler=30, k=15, color_importance=5, verbose=0):
+    def process(self, verbose=0):
         """function to segment images in a folder in order and save them to output folder
-
+        
         Args:
-            region_size (int, optional): regions_size parameter for cv2 superpixel. Defaults to 40.
-            ruler (int, optional): ruler parameter for cv2 superpixel. Defaults to 30.
-            k (int, optional): k parameter for cv2 kmeans. Defaults to 15.
-            color_importance (int, optional): color importance parameter for cv2 kmeans. Defaults to 5.
             verbose (int, optional): verbose level. Defaults to 0.
         """
         file_no = 0
@@ -470,7 +477,7 @@ class Segmentating:
 
             # if file is not processed yet, start a process for it
             if file_no not in self.threads.keys():
-                thread = self.create_thread(file_no, region_size, ruler, k, color_importance, verbose=verbose-1)
+                thread = self.create_thread(file_no, verbose=verbose-1)
                 self.threads[file_no] = thread
 
             # if files process is done start segmenting it
@@ -489,8 +496,11 @@ class Segmentating:
             elif image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and type(self.segmented_image_dict[image_path][1]) == str:
                 thread.join()
                 exception = self.segmented_image_dict[image_path][0]
-                raise(ThreadProcessException("During thread processes following Exception raised with error code " + str(exception.error_code) +":\n" + str(exception) + ": " + exception.message))
-            
+                if type(exception) in [ErrorException,WrongTypeException,InvalidMethodException]:
+                    raise(ThreadProcessException("During thread processes following Exception raised with error code " + str(exception.error_code) +":\n" + str(exception) + ": " + exception.message))
+                else:
+                    raise(Exception(exception))
+
         self.thread_stop = True
         cv2.destroyAllWindows()
 
@@ -529,7 +539,7 @@ class Segmentating:
             if self.method == "grabcut":
                 self.grabcut_process(self.verbose-1)
             else:
-                self.process(self.region_size, self.ruler, self.k, self.color_importance, verbose=self.verbose-1)
+                self.process(verbose=self.verbose-1)
         except (ErrorException, WrongTypeException, GrabcutSegmentorQuitException, ColorPickerException,
                 NotMatchingTemplatesAndSegmentsException, NotMatchingAttentionAndMasksException) as custom_e:
             self.thread_stop = True
