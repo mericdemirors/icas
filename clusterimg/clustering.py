@@ -453,4 +453,3 @@ class Clustering():
             exit(custom_e.error_code)
         except FinishException as fe:
             print(fe.message)
-            exit(fe.error_code)
