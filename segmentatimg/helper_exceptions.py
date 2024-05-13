@@ -1,4 +1,4 @@
-class ErrorException(Exception):
+class ErrorException(Exception): # can be handled by ThreadProcessException
     def __init__(self, message):
         self.message = message
         self.error_code = 500
@@ -6,7 +6,7 @@ class ErrorException(Exception):
     def __str__(self):
         return("Custom exception to signal for notifying caller object that process is terminated with 'e' verbose type")
     
-class WrongTypeException(Exception):
+class WrongTypeException(Exception): # can be handled by ThreadProcessException
     def __init__(self, message):
         self.message = message
         self.error_code = 2300
@@ -34,7 +34,7 @@ class NotMatchingAttentionAndMasksException(Exception):
     def __str__(self):
         return("Custom exception to signal for notifying caller object that given attentions and masks are not matching")
 
-class InvalidMethodException(Exception):
+class InvalidMethodException(Exception): # can be handled by ThreadProcessException
     def __init__(self, message):
         self.message = message
         self.error_code = 900
@@ -47,3 +47,10 @@ class GrabcutSegmentorQuitException(Exception):
         self.error_code = 700
     def __str__(self):
         return("Custom exception to signal for notifying caller object that grabcut segmentation has been quitted midway")
+
+class ThreadProcessException(Exception):
+    def __init__(self, message):
+        self.message = message
+        self.error_code = 2000
+    def __str__(self):
+        return("Custom exception to signal for notifying caller object that thread process to segment imagaes in the background is failed")

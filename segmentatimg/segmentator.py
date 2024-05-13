@@ -1,9 +1,9 @@
-import cv2
 import os
-import numpy as np
 import threading
-from threading import Lock
 
+import cv2
+import numpy as np
+from threading import Lock
 from skimage.morphology import flood
 lock = Lock()
 
@@ -39,6 +39,7 @@ class Segmentating:
         self.k = k
         self.color_importance = color_importance
         self.threshold = threshold
+        self.threads = {}
 
         if len(templates) != len(segments):
             raise(NotMatchingTemplatesAndSegmentsException("length of templates("+str(len(templates))+") and segments("+str(len(segments))+") are not matching"))
@@ -256,27 +257,30 @@ class Segmentating:
                 color_importance (int): importance of pixel colors proportional to pixels coordinates
                 verbose (int, optional): verbose level. Defaults to 0.
             """
-            if self.thread_stop:
-                return
+            try:
+                if self.thread_stop:
+                    return
 
-            # iterate at surrounding images of current image
-            for file_no in range(max(file_no-self.thread_range, 0), min(file_no+self.thread_range, len(self.files))):
-                image_path = os.path.join(self.image_folder, self.files[file_no])
-                
-                # add key to dict to prevent upcoming threads to process same image while it is already being processed
-                lock.acquire()
-                if image_path not in self.segmented_image_dict.keys(): 
-                    self.segmented_image_dict[image_path] = None
-                lock.release()
+                # iterate at surrounding images of current image
+                for file_no in range(max(file_no-self.thread_range, 0), min(file_no+self.thread_range, len(self.files))):
+                    image_path = os.path.join(self.image_folder, self.files[file_no])
+                    
+                    # add key to dict to prevent upcoming threads to process same image while it is already being processed
+                    lock.acquire()
+                    if image_path not in self.segmented_image_dict.keys(): 
+                        self.segmented_image_dict[image_path] = None
+                    lock.release()
 
-                # if image is not processed yet, process it and add to dictionary
-                lock.acquire()
-                if self.segmented_image_dict[image_path] is None: 
-                    raw_image = cv2.imread(image_path)
-                    segmented_image = segment_image(method=self.method, image_path=image_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
-                    self.segmented_image_dict[image_path] = (raw_image, segmented_image)
-                lock.release()
-
+                    # if image is not processed yet, process it and add to dictionary
+                    lock.acquire()
+                    if self.segmented_image_dict[image_path] is None: 
+                        raw_image = cv2.imread(image_path)
+                        segmented_image = segment_image(method=self.method, image_path=image_path, region_size=region_size, ruler=ruler, k=k, color_importance=color_importance)
+                        self.segmented_image_dict[image_path] = (raw_image, segmented_image)
+                    lock.release()
+            except Exception as e:
+                self.segmented_image_dict[image_path] = (e, "thread error occured")
+                self.thread_stop = True
         thread = threading.Thread(target=pass_image_to_thread, args=(file_no, region_size, ruler, k, color_importance, verbose-1), daemon=True)
         thread.start()
         return thread
@@ -461,17 +465,16 @@ class Segmentating:
             verbose (int, optional): verbose level. Defaults to 0.
         """
         file_no = 0
-        threads = {}
         while 0 <= file_no < len(self.files):
             image_path = self.files[file_no]
 
             # if file is not processed yet, start a process for it
-            if file_no not in threads.keys():
+            if file_no not in self.threads.keys():
                 thread = self.create_thread(file_no, region_size, ruler, k, color_importance, verbose=verbose-1)
-                threads[file_no] = thread
+                self.threads[file_no] = thread
 
             # if files process is done start segmenting it
-            if image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None:
+            if image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and self.segmented_image_dict[image_path][1] != "thread error occured":
                 raw_image, orig_segmented_image = self.segmented_image_dict[image_path]                
                 self.empty_images()
                 self.set_images(raw_image, orig_segmented_image)
@@ -483,7 +486,11 @@ class Segmentating:
                     file_no = (file_no - 1)%len(self.files)
                 elif return_code == "quit": # q
                     break
-                
+            elif image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and self.segmented_image_dict[image_path][1] == "thread error occured":
+                thread.join()
+                exception = self.segmented_image_dict[image_path][0]
+                raise(ThreadProcessException("During thread processes following Exception raised with error code " + str(exception.error_code) +":\n" + str(exception) + ": " + exception.message))
+            
         self.thread_stop = True
         cv2.destroyAllWindows()
 
@@ -528,3 +535,6 @@ class Segmentating:
             self.thread_stop = True
             print(custom_e.message)
             exit(custom_e.error_code)
+        except ThreadProcessException as tpe:
+            print(tpe.message)
+            exit(tpe.error_code)
