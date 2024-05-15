@@ -215,6 +215,7 @@ def load_checkpoint(path, verbose=0):
     loaded = {(k.split(", ")[0][2:-1], k.split(", ")[1][1:-2]):v for (k,v) in loaded_dict.items()}
     return loaded
 
+# transfers image from folder to folder
 def image_transfer(transfer, source_path, destination_path):
     """encapsulation of image transfering
 

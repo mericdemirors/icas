@@ -11,6 +11,17 @@ import torch.optim as optim
 
 class ModelTrainer():
     def __init__(self, num_of_epochs, lr, batch_size, loss_type, dataset, model, ckpt_path=None):
+        """class to capsulate pytorch model and dataset
+
+        Args:
+            num_of_epochs (int): number of epochs for model training
+            lr (float): learning rate
+            batch_size (int): batch size for dataloader
+            loss_type (str): loss function type to pass to get_criterion()
+            dataset (pytorch dataset): pytorch dataset
+            model (pytorch model): pytorch model
+            ckpt_path (str, optional): path to load model checkpoint, None means model is not trained. Defaults to None.
+        """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_of_epochs = num_of_epochs
         self.lr = lr
@@ -25,7 +36,17 @@ class ModelTrainer():
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
 
         self.ckpt_path = ckpt_path
+
     def get_criterion(self, loss_type="mse", model=None):
+        """function to set loss function
+
+        Args:
+            loss_type (str, optional): indicates los function. Defaults to "mse".
+            model (pytorch model, optional): model to use at 'perceptual' loss type, None results in vgg19. Defaults to None.
+
+        Returns:
+            function: loss function
+        """
         if loss_type == "mse":
             loss = nn.MSELoss()
         if loss_type == "mae":
@@ -37,6 +58,17 @@ class ModelTrainer():
             model = model.eval()
 
             def perceptual_loss(x, y, model=model):
+                """perceptual loss function, calculates mean absolute difference between 
+                2 tensors feature outputs from a model
+
+                Args:
+                    x (torch.tensor): first tensor
+                    y (torch.tensor): second tensor
+                    model (pytorch model, optional): model to pass parameter tensors None results in vgg19. Defaults to model.
+
+                Returns:
+                    torch.tensor: loss
+                """
                 x_out = model(x)
                 y_out = model(y)
                 return abs(x_out-y_out).mean()
@@ -44,6 +76,14 @@ class ModelTrainer():
         return loss
 
     def train(self, model_serial_path):
+        """training loop for model
+
+        Args:
+            model_serial_path (str): model serial no to save model checkpoint
+
+        Returns:
+            str: path to model checkpoint
+        """
         torch.cuda.empty_cache()
         min_loss = None
         old_min_save = None
@@ -81,6 +121,14 @@ class ModelTrainer():
         return os.path.join(model_serial_path, save_name)
 
     def get_features(self, ckpt_path):
+        """function to get image features
+
+        Args:
+            ckpt_path (str): model checkpoint path
+
+        Returns:
+            dict: dictionary of image paths and corresponding features
+        """
         torch.cuda.empty_cache()
         self.model.load_state_dict(torch.load(ckpt_path))
         self.model = self.model.eval()
@@ -98,6 +146,11 @@ class ModelTrainer():
         return features
     
     def __call__(self):
+        """call function to capsulate all pipeline in one call
+
+        Returns:
+            dict: dictionary of image paths and corresponding features
+        """
         if self.ckpt_path is None:
             model_serial_path = f"{self.dataloader.dataset.root_dir}_{type(self.model).__name__}_{self.loss_type}_{datetime.now().strftime('%m:%d:%H:%M:%S')}"
             os.makedirs(model_serial_path)

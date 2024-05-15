@@ -10,5 +10,6 @@ TO-ADD
 TO-TRY
 
 TO-TIDY
+- add verbose to "DL_"s
 
 TO-FIX

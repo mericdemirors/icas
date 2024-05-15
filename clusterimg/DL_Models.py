@@ -91,6 +91,14 @@ class PowerOf2s256andAbove(nn.Module):
         return x
     
     def embed(self, x):
+        """function to get image embeddings from models encoder part
+
+        Args:
+            x (torch.tensor): image batch
+
+        Returns:
+            torch.tensor: image embeddings
+        """
         x, _ = self.encoder1(x)
         x, _ = self.encoder2(x)
         x, _ = self.encoder3(x)
@@ -163,6 +171,14 @@ class PowerOf2s32to128(nn.Module):
         return x
     
     def embed(self, x):
+        """function to get image embeddings from models encoder part
+
+        Args:
+            x (torch.tensor): image batch
+
+        Returns:
+            torch.tensor: image embeddings
+        """
         x, _ = self.encoder1(x)
         x, _ = self.encoder2(x)
         x = self.encoder3(x)
