@@ -228,7 +228,6 @@ def image_transfer(transfer, source_path, destination_path):
     if transfer == "move":
         shutil.move(source_path, destination_path)
 
-
 # writes clusters into destination
 def write_clusters(clusters, batch_idx, destination_container_folder, outliers, transfer, verbose=0):
     """writes image clusters to a folder
