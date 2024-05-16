@@ -34,7 +34,7 @@ class NotMatchingAttentionAndMasksException(Exception):
     def __str__(self):
         return("Custom exception to signal for notifying caller object that given attentions and masks are not matching")
 
-class InvalidMethodException(Exception): # can be handled by ThreadProcessException
+class InvalidMethodException(Exception):
     def __init__(self, message):
         self.message = message
         self.error_code = 900

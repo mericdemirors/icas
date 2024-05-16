@@ -51,15 +51,12 @@ class Segmentating:
         """
         self.image_folder = image_folder
         self.files = sorted([os.path.join(self.image_folder, file) for file in os.listdir(self.image_folder)])
+        self.color_picker_image_path = color_picker_image_path
         self.method = method
         self.verbose = verbose
         self.template_threshold = template_threshold
         self.threads = {}
-
-        if len(templates) != len(segments):
-            raise(NotMatchingTemplatesAndSegmentsException("length of templates("+str(len(templates))+") and segments("+str(len(segments))+") are not matching"))
-        if len(attentions) != len(masks):
-            raise(NotMatchingAttentionAndMasksException("length of attentions("+str(len(attentions))+") and masks("+str(len(masks))+") are not matching"))
+        self.arguman_check(templates, attentions, segments, masks)
 
         if attentions == [] and masks == []:
             for (temp, seg) in list(zip(templates, segments)):
@@ -83,10 +80,6 @@ class Segmentating:
         self.refresh_images = False
         self.empty_images()
 
-        self.color_picker_image = cv2.imread(color_picker_image_path)
-        if self.color_picker_image is None:
-            raise(ColorPickerException("No color_picker_image loaded"))
-
         base_folder, images_folder_name = os.path.split(self.image_folder)
         self.save_folder = os.path.join(base_folder, images_folder_name + "_segmented")
 
@@ -96,6 +89,40 @@ class Segmentating:
 
         self.segment_image_parameters = locals()
         self.segment_image_parameters = {k: v for k, v in self.segment_image_parameters.items() if k in inspect.signature(segment_image).parameters}
+
+
+    def __str__(self):
+        """casting to string method for printing/debugging object attributes
+
+        Returns:
+            str: object attribute information
+        """
+        attributes = vars(self)
+        attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
+        return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
+
+    def arguman_check(self, templates, attentions, segments, masks, verbose=0):
+        """checks validity of object initialization parameters
+
+        Args:
+            templates (list, optional): templates to search in raw images
+            attentions (list, optional): template masks to where to pay attention, will be derived from templates if not provided
+            segments (list, optional): segments to paint detected templates
+            masks (list, optional): segment masks to where to paint, will be derived from segments if not provided
+            verbose (int, optional): verbose level. Defaults to 0.
+        """
+        if len(templates) != len(segments):
+            raise(NotMatchingTemplatesAndSegmentsException("length of templates("+str(len(templates))+") and segments("+str(len(segments))+") are not matching"))
+        if len(attentions) != len(masks):
+            raise(NotMatchingAttentionAndMasksException("length of attentions("+str(len(attentions))+") and masks("+str(len(masks))+") are not matching"))
+
+        valid_methods = ["edge", "superpixel", "kmeans", "slickmeans", "chanvase", "felzenszwalb", "quickshift", "graph", "grabcut"]
+        if self.method not in valid_methods:
+            raise(InvalidMethodException("Invalid method: " + self.method))
+        
+        self.color_picker_image = cv2.imread(self.color_picker_image_path)
+        if self.color_picker_image is None:
+            raise(ColorPickerException("No color_picker_image loaded"))
 
     def empty_images(self):
         """empties object image attributes
@@ -496,7 +523,7 @@ class Segmentating:
             elif image_path in self.segmented_image_dict.keys() and self.segmented_image_dict[image_path] is not None and type(self.segmented_image_dict[image_path][1]) == str:
                 thread.join()
                 exception = self.segmented_image_dict[image_path][0]
-                if type(exception) in [ErrorException,WrongTypeException,InvalidMethodException]:
+                if type(exception) in [ErrorException,WrongTypeException]:
                     raise(ThreadProcessException("During thread processes following Exception raised with error code " + str(exception.error_code) +":\n" + str(exception) + ": " + exception.message))
                 else:
                     raise(Exception(exception))

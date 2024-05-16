@@ -309,8 +309,6 @@ def segment_image(image_path="", method="", edge_th = 60, bilateral_d = 7, sigma
         result_image = graph_segmentation(image_path, k, min_segment_size, sigma, verbose=verbose-1)
     elif method == "grabcut":
         result_image = grabcut_segmentation(image_path, verbose=verbose-1)
-    else:
-        raise(InvalidMethodException("Invalid method: " + method))
     # Below methods are not implemented because they are not suited for multiclass image segmentation tasks
     # But they could be use for singleclass similar object detection tasks
     # watershed
