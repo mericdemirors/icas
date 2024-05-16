@@ -9,6 +9,7 @@ TO-ADD
 - early stopping
 
 TO-TRY
+- pyclustering library
 
 TO-TIDY
 - seperate DL pipeline to another clustering class with all functions of original class
