@@ -148,12 +148,11 @@ def calculate_similarity(
     now = datetime.datetime.now()
 
     image1_file, image2_file = tpl
-    sim = similarity_methods(method, images, image1_file, image2_file, verbose=verbose-1)
 
     if bools[im1_idx][im2_idx]:
         # trying to calculate similarity
         try:
-            similarity_methods(method, images, image1_file, image2_file, verbose=verbose-1)
+            sim = similarity_methods(method, images, image1_file, image2_file, verbose=verbose-1)
         except Exception as e:
             sim = -np.inf
             print_verbose("w", "error while similarity calculation(setting image similarity to -np.inf):\n" + str(e), verbose)
