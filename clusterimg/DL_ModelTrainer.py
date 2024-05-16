@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 class ModelTrainer():
-    def __init__(self, num_of_epochs, lr, batch_size, loss_type, dataset, model, ckpt_path=None):
+    def __init__(self, num_of_epochs, lr, batch_size, loss_type, dataset, model, ckpt_path=None, verbose=0):
         """class to capsulate pytorch model and dataset
 
         Args:
@@ -32,12 +32,13 @@ class ModelTrainer():
         self.model = model.to(self.device)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        self.criterion = self.get_criterion(loss_type)
+        self.criterion = self.get_criterion(loss_type, self.verbose-1)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
 
         self.ckpt_path = ckpt_path
+        self.verbose = verbose
 
-    def get_criterion(self, loss_type="mse", model=None):
+    def get_criterion(self, loss_type="mse", model=None, verbose=0):
         """function to set loss function
 
         Args:
@@ -75,7 +76,7 @@ class ModelTrainer():
             loss = perceptual_loss
         return loss
 
-    def train(self, model_serial_path):
+    def train(self, model_serial_path, verbose=0):
         """training loop for model
 
         Args:
@@ -120,7 +121,7 @@ class ModelTrainer():
         torch.cuda.empty_cache()
         return os.path.join(model_serial_path, save_name)
 
-    def get_features(self, ckpt_path):
+    def get_features(self, ckpt_path, verbose=0):
         """function to get image features
 
         Args:
@@ -145,7 +146,7 @@ class ModelTrainer():
         torch.cuda.empty_cache()
         return features
     
-    def __call__(self):
+    def __call__(self, verbose=0):
         """call function to capsulate all pipeline in one call
 
         Returns:
@@ -155,8 +156,8 @@ class ModelTrainer():
             model_serial_path = f"{self.dataloader.dataset.root_dir}_{type(self.model).__name__}_{self.loss_type}_{datetime.now().strftime('%m:%d:%H:%M:%S')}"
             os.makedirs(model_serial_path)
 
-            self.ckpt_path = self.train(model_serial_path)
+            self.ckpt_path = self.train(model_serial_path, verbose=verbose-1)
         
-        features = self.get_features(self.ckpt_path)
+        features = self.get_features(self.ckpt_path, verbose=verbose-1)
 
         return features

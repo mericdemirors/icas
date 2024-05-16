@@ -436,42 +436,47 @@ def read_and_resize(path, size=(0,0), scale=(1.0, 1.0), gray=True):
 
     return image
 
-# generates test image
-def generate_image(character_to_put_on, size=300, x=60, y=240, rand_RGB_value=0, rand_xy_value = 5):
-    """function to generate test dataset images
 
-    Args:
-        character_to_put_on (str): character to write on image
-        size (int, optional): size of image. Defaults to 300.
-        x (int, optional): x coordinate of character. Defaults to 60.
-        y (int, optional): y coordinate of character. Defaults to 240.
-        rand_RGB_value (int, optional): random RGB shift. Defaults to 0.
-        rand_xy_value (int, optional): random coordinate shift. Defaults to 5.
-
-    Returns:
-        numpy.ndarray: prepared image
-    """
-    bg = (220 + random.randint(-rand_RGB_value, rand_RGB_value),
-          245 + random.randint(-rand_RGB_value, rand_RGB_value),
-          245 + random.randint(-rand_RGB_value, rand_RGB_value))
-    background = np.full((size, size, 3), bg, dtype=np.uint8)
-    
-    # put given character text over background
-    background = cv2.putText(background, character_to_put_on,
-                             (x + random.randint(-rand_xy_value, rand_xy_value),
-                              y + random.randint(-rand_xy_value, rand_xy_value)), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 9, (0,0,0), 45, cv2.LINE_AA) 
-
-    return background
 
 # generates test dataset
-def generate_test_dataset(path, count):
+def generate_test_dataset(path, count, size=256, x=40, y=220, rand_RGB_value=0, rand_xy_value=5, font_scale=9, font_thickness=45):
     """function to generate test dataset
 
     Args:
         path (str): folder path to generate images in
         count (int): number of images
+        size (int, optional): size of image. Defaults to 256.
+        x (int, optional): x coordinate of character. Defaults to 40.
+        y (int, optional): y coordinate of character. Defaults to 220.
+        rand_RGB_value (int, optional): random RGB shift. Defaults to 0.
+        rand_xy_value (int, optional): random coordinate shift. Defaults to 5.
+        font_scale (int, optional): font scale. Defaults to 9.
+        font_thickness (int, optional): font thickness. Defaults to 45.
+
     """
+    # generates test image
+    def generate_image(character_to_put_on):
+        """function to generate test dataset images
+
+        Args:
+            character_to_put_on (str): character to write on image
+
+        Returns:
+            numpy.ndarray: prepared image
+        """
+        bg = (220 + random.randint(-rand_RGB_value, rand_RGB_value),
+            245 + random.randint(-rand_RGB_value, rand_RGB_value),
+            245 + random.randint(-rand_RGB_value, rand_RGB_value))
+        background = np.full((size, size, 3), bg, dtype=np.uint8)
+        
+        # put given character text over background
+        background = cv2.putText(background, character_to_put_on,
+                                (x + random.randint(-rand_xy_value, rand_xy_value),
+                                y + random.randint(-rand_xy_value, rand_xy_value)), 
+                                cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0,0,0), font_thickness, cv2.LINE_AA) 
+
+        return background
+
     os.makedirs(path, exist_ok=True)
     for i in range(count):
         character = random.choice("0123456789")
