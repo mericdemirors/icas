@@ -3,7 +3,7 @@
 Tool for segmentating images
 
 TO-ADD
-- Deep Learning
+- Deep Learning with segment anything
 
 TO-TRY
 
