@@ -27,6 +27,7 @@ class ModelTrainer():
         self.lr = lr
         self.batch_size = batch_size
         self.loss_type = loss_type
+        self.verbose = verbose
 
         self.dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         self.model = model.to(self.device)
@@ -36,7 +37,6 @@ class ModelTrainer():
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
 
         self.ckpt_path = ckpt_path
-        self.verbose = verbose
 
     def get_criterion(self, loss_type="mse", model=None, verbose=0):
         """function to set loss function
@@ -72,7 +72,7 @@ class ModelTrainer():
                 """
                 x_out = model(x)
                 y_out = model(y)
-                return abs(x_out-y_out).mean()
+                return (x_out-y_out).mean()
             loss = perceptual_loss
         return loss
 
