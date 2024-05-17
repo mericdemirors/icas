@@ -7,12 +7,12 @@ TO-ADD
 - openmp
 - C/C++/CUDA optimization
 - early stopping
+- template clustering
 
 TO-TRY
 - pyclustering library
 
 TO-TIDY
-- seperate DL pipeline to another clustering class with all functions of original class
+- define the function parameter types
 
 TO-FIX
-- check why are similarities are so close to 0.99999
