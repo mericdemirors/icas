@@ -4,7 +4,7 @@ from datetime import datetime
 from tqdm import tqdm
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 import torchvision.models as models
 import torch.nn as nn
 import torch.optim as optim
@@ -27,9 +27,9 @@ class ModelTrainer():
         self.lr = lr
         self.batch_size = batch_size
         self.loss_type = loss_type
+        self.dataset = dataset
         self.verbose = verbose
 
-        self.dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         self.model = model.to(self.device)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
@@ -37,6 +37,11 @@ class ModelTrainer():
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
 
         self.ckpt_path = ckpt_path
+        if self.ckpt_path is None:
+            self.model_serial_path = f"{self.dataset.root_dir}_{type(self.model).__name__}_{self.loss_type}_{datetime.now().strftime('%m:%d:%H:%M:%S')}"
+            os.makedirs(self.model_serial_path)
+        else:
+            self.model_serial_path = self.ckpt_path.split(os.sep)[-2]
 
     def get_criterion(self, loss_type="mse", model=None, verbose=0):
         """function to set loss function
@@ -76,23 +81,16 @@ class ModelTrainer():
             loss = perceptual_loss
         return loss
 
-    def train(self, model_serial_path, verbose=0):
-        """training loop for model
-
-        Args:
-            model_serial_path (str): model serial no to save model checkpoint
-
-        Returns:
-            str: path to model checkpoint
-        """
+    def train(self, verbose=0):
         torch.cuda.empty_cache()
         min_loss = None
         old_min_save = None
         early_stop_step = 0
         self.model = self.model.train()
-
+        dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
+        
         for epoch in range(self.num_of_epochs):
-            for (paths, images) in tqdm(self.dataloader, leave=False):
+            for (paths, images) in tqdm(dataloader, leave=False):
                 images = images.to(self.device)
                 outputs = self.model(images)
                 loss = self.criterion(images, outputs)
@@ -105,10 +103,10 @@ class ModelTrainer():
                 early_stop_step = 0
                 min_loss = loss
                 if old_min_save is not None:
-                    os.remove(os.path.join(model_serial_path, old_min_save))
+                    os.remove(os.path.join(self.model_serial_path, old_min_save))
                 save_name = "min_loss:"+str(min_loss.item()) + "_epoch:" + str(epoch) + ".pth"
                 old_min_save = save_name
-                torch.save(self.model.state_dict(), os.path.join(model_serial_path, save_name))
+                torch.save(self.model.state_dict(), os.path.join(self.model_serial_path, save_name))
 
             print(f"Epoch: {epoch+1} | epoch loss: {loss.item()} | min loss: {min_loss.item()}", flush=True)
             self.scheduler.step()
@@ -119,24 +117,23 @@ class ModelTrainer():
                 break
         
         torch.cuda.empty_cache()
-        return os.path.join(model_serial_path, save_name)
+        self.model.load_state_dict(torch.load(os.path.join(self.model_serial_path, save_name)))
 
-    def get_features(self, ckpt_path, verbose=0):
+    def get_features(self, start, end, verbose=0):
         """function to get image features
-
-        Args:
-            ckpt_path (str): model checkpoint path
 
         Returns:
             dict: dictionary of image paths and corresponding features
         """
-        torch.cuda.empty_cache()
-        self.model.load_state_dict(torch.load(ckpt_path))
         self.model = self.model.eval()
+        torch.cuda.empty_cache()
         features = dict()
+        subset = Subset(self.dataset, list(range(start, end)))
+        dataloader = DataLoader(subset, batch_size=self.batch_size, shuffle=False)
+
 
         with torch.no_grad():
-            for (paths, images) in self.dataloader:
+            for (paths, images) in dataloader:
                 images = images.to(self.device)
                 
                 embeds = self.model.embed(images)
@@ -152,12 +149,3 @@ class ModelTrainer():
         Returns:
             dict: dictionary of image paths and corresponding features
         """
-        if self.ckpt_path is None:
-            model_serial_path = f"{self.dataloader.dataset.root_dir}_{type(self.model).__name__}_{self.loss_type}_{datetime.now().strftime('%m:%d:%H:%M:%S')}"
-            os.makedirs(model_serial_path)
-
-            self.ckpt_path = self.train(model_serial_path, verbose=verbose-1)
-        
-        features = self.get_features(self.ckpt_path, verbose=verbose-1)
-
-        return features
