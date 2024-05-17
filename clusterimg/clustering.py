@@ -54,6 +54,8 @@ class Clustering():
             base_folder, images_folder_name = os.path.split(self.images_folder_path)
             self.result_container_folder = os.path.join(base_folder, images_folder_name + "_clustered")
 
+        self.arguman_check(verbose-1)
+
         if self.threshold is None:
             self.interactive_threshold_selection()
 
@@ -375,8 +377,6 @@ class Clustering():
     def process(self):
         """function to capsulate all pipeline in one call
         """
-        self.arguman_check(self.verbose-1)
-
         # creating result folder
         if self.option != "merge":
             if os.path.exists(self.result_container_folder) and not self.overwrite:
