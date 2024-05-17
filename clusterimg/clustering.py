@@ -152,7 +152,7 @@ class Clustering():
 
         comb = list(combinations(image_paths, 2))  # all pair combinations of images
         bools = np.ones((len(image_paths), len(image_paths)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
-        print_verbose(batch_idx, "processing total of " + str(len(comb)) + " pair combinations", verbose)
+        print_verbose(batch_idx, "processing total of " + str(len(comb)) + " pair combinations", verbose=verbose-1)
 
         # divide the computations to chunks
         if self.num_of_threads > len(comb):
@@ -242,11 +242,11 @@ class Clustering():
         bools = np.ones((len(template_paths), len(template_paths)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
 
         if len(comb) < 1:
-            print_verbose("f", "no template pair combination pair found", verbose)
+            print_verbose("f", "no template pair combination pair found", verbose=verbose-1)
         if self.option != "merge":
-            print_verbose("r", "processing total of " + str(len(comb)) + " pair combinations", verbose)
+            print_verbose("r", "processing total of " + str(len(comb)) + " pair combinations", verbose=verbose-1)
         if self.option == "merge":
-            print_verbose("m", "processing total of " + str(len(comb)) + " pair combinations", verbose)
+            print_verbose("m", "processing total of " + str(len(comb)) + " pair combinations", verbose=verbose-1)
 
         # divide the computations to chunks
         if self.num_of_threads > len(comb):
@@ -321,9 +321,9 @@ class Clustering():
         all_template_files = sorted(list(template_cluster_dict.keys()))
 
         if self.option != "merge":
-            print_verbose("r", str(len(template_cluster_dict)) + " template found", verbose)
+            print_verbose("r", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
         if self.option == "merge":
-            print_verbose("m", str(len(template_cluster_dict)) + " template found", verbose)
+            print_verbose("m", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
 
         # compute all template similarities in one pass
         template_paths = [os.path.join(template_cluster_dict[file], file) for file in all_template_files]
@@ -374,7 +374,7 @@ class Clustering():
             print("-"*70)
 
     # full process in one function
-    def process(self):
+    def process(self, verbose=0):
         """function to capsulate all pipeline in one call
         """
         # creating result folder
@@ -394,7 +394,7 @@ class Clustering():
             # process the images batch by batch
             for batch_idx, start in enumerate(range(0, len(all_image_files), self.batch_size)):
                 image_files = all_image_files[start : start + self.batch_size]
-                self.create_clusters(batch_idx, image_files, verbose=self.verbose-1)
+                self.create_clusters(batch_idx, image_files, verbose=verbose-1)
 
             # if images are done in one batch terminate the code after organizing result folders
             if self.batch_size >= len(all_image_files):
@@ -402,10 +402,10 @@ class Clustering():
                     new_file_name = file.replace("batch_0", "result")
                     os.rename(os.path.join(self.result_container_folder, file), os.path.join(self.result_container_folder, new_file_name))
                 os.remove(os.path.join(self.result_container_folder, "image_similarities_result.json"))
-                print_verbose("f", "no merge needed to single batch", self.verbose)
+                print_verbose("f", "no merge needed to single batch", verbose=verbose-1)
             
         if self.option == "dontmerge":
-            print_verbose("f", "finishing because of no merge request", self.verbose)
+            print_verbose("f", "finishing because of no merge request", verbose=verbose-1)
 
         # gets each batchs folder
         batch_folder_paths = sorted([os.path.join(self.result_container_folder, f)
@@ -413,12 +413,12 @@ class Clustering():
                                     if os.path.isdir(os.path.join(self.result_container_folder, f))])
 
         # merge each batch to get which clusters folders should be merged together
-        template_cluster_folders_to_merge_list = self.merge_clusters_by_templates(batch_folder_paths, verbose=self.verbose-1)
+        template_cluster_folders_to_merge_list = self.merge_clusters_by_templates(batch_folder_paths, verbose=verbose-1)
 
         if self.option != "merge":
-            print_verbose("r", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", self.verbose)
+            print_verbose("r", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
         if self.option == "merge":
-            print_verbose("m", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", self.verbose)
+            print_verbose("m", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
         
         # creating result folder and merging cluster folders
         result_folder_path = os.path.join(self.result_container_folder, "results")

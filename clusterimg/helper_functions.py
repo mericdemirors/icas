@@ -155,7 +155,7 @@ def calculate_similarity(
             sim = similarity_methods(method, images, image1_file, image2_file, verbose=verbose-1)
         except Exception as e:
             sim = -np.inf
-            print_verbose("w", "error while similarity calculation(setting image similarity to -np.inf):\n" + str(e), verbose)
+            print_verbose("w", "error while similarity calculation(setting image similarity to -np.inf):\n" + str(e), verbose=verbose-1)
 
         # if similar
         if sim > similarity_threshold:
@@ -170,7 +170,7 @@ def calculate_similarity(
             # if it is time to verbose
             if verbose and (now - last_verbose_time[0]).total_seconds() > 60:
                 last_verbose_time[0] = now
-                print_verbose(batch_idx, "remaining combinations to check: " + str(int(bools.sum() / 2)), verbose)
+                print_verbose(batch_idx, "remaining combinations to check: " + str(int(bools.sum() / 2)), verbose=verbose-1)
             lock.release()
 
     # if it is time to save a checkpoint
@@ -179,7 +179,7 @@ def calculate_similarity(
         last_checkpoint_time[0] = now
         with open(os.path.join(destination_container_folder_base, "image_similarities_batch_" + str(batch_idx) + "_checkpoint.json"), "w") as json_file:
             json.dump({str(k): v for (k, v) in list(image_similarities.items())}, json_file, indent="")
-        print_verbose(batch_idx, "image_similarities saved(checkpoint)", verbose)
+        print_verbose(batch_idx, "image_similarities saved(checkpoint)", verbose=verbose-1)
         lock.release()
 
 # saves similarities into a json
@@ -196,7 +196,7 @@ def save_checkpoint(batch_idx, path_to_write, image_similarities, verbose=0):
     dict_to_save = {str(k): v for (k, v) in list(image_similarities.items())}
     with open(os.path.join(path_to_write, "image_similarities_batch_" + str(batch_idx) + ".json"), "w") as json_file:
         json.dump(dict_to_save, json_file, indent="")
-    print_verbose(batch_idx, "image_similarities saved", verbose)
+    print_verbose(batch_idx, "image_similarities saved", verbose=verbose-1)
 
 # How to read checkpoint dictionary
 def load_checkpoint(path, verbose=0):
@@ -253,7 +253,7 @@ def write_clusters(clusters, batch_idx, destination_container_folder, outliers, 
         
     [image_transfer(transfer, image_filename, destination_folder_path) for image_filename in outliers]
 
-    print_verbose(batch_idx, str(len(clusters)) + " cluster found", verbose)
+    print_verbose(batch_idx, str(len(clusters)) + " cluster found", verbose=verbose-1)
 
 # prints verboses in a format
 def print_verbose(verbose_type, message, verbose=0):
