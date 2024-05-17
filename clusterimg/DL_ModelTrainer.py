@@ -9,6 +9,9 @@ import torchvision.models as models
 import torch.nn as nn
 import torch.optim as optim
 
+from helper_functions import print_verbose
+from helper_exceptions import *
+
 class ModelTrainer():
     def __init__(self, num_of_epochs, lr, batch_size, loss_type, dataset, model, ckpt_path=None, verbose=0):
         """class to capsulate pytorch model and dataset
@@ -33,17 +36,19 @@ class ModelTrainer():
         self.model = model.to(self.device)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        self.criterion = self.get_criterion(loss_type, self.verbose-1)
+        self.criterion = self.get_criterion(loss_type)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
-
+        
         self.ckpt_path = ckpt_path
         if self.ckpt_path is None:
+            # if checkpoint is not given, create a new serial number
             self.model_serial_path = f"{self.dataset.root_dir}_{type(self.model).__name__}_{self.loss_type}_{datetime.now().strftime('%m:%d:%H:%M:%S')}"
             os.makedirs(self.model_serial_path)
         else:
-            self.model_serial_path = self.ckpt_path.split(os.sep)[-2]
+            # else copy the given serial number
+            self.model_serial_path = os.path.split(self.ckpt_path)[0]
 
-    def get_criterion(self, loss_type="mse", model=None, verbose=0):
+    def get_criterion(self, loss_type="mse", model=None):
         """function to set loss function
 
         Args:
@@ -55,9 +60,9 @@ class ModelTrainer():
         """
         if loss_type == "mse":
             loss = nn.MSELoss()
-        if loss_type == "mae":
+        elif loss_type == "mae":
             loss = nn.L1Loss()
-        if loss_type == "perceptual":
+        elif loss_type == "perceptual":
             if model is None:
                 model = models.vgg19(pretrained=True)
             
@@ -79,9 +84,13 @@ class ModelTrainer():
                 y_out = model(y)
                 return (x_out-y_out).mean()
             loss = perceptual_loss
+        else:
+            raise(InvalidLossException("Invalid loss type: " + loss_type))
         return loss
 
-    def train(self, verbose=0):
+    def train(self):
+        """trains model with dataset
+        """
         torch.cuda.empty_cache()
         min_loss = None
         old_min_save = None
@@ -90,7 +99,7 @@ class ModelTrainer():
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
         
         for epoch in range(self.num_of_epochs):
-            for (paths, images) in tqdm(dataloader, leave=False):
+            for (paths, images) in tqdm(dataloader, desc=f"Training {self.model_serial_path}", leave=False):
                 images = images.to(self.device)
                 outputs = self.model(images)
                 loss = self.criterion(images, outputs)
@@ -99,6 +108,7 @@ class ModelTrainer():
                 loss.backward()    
                 self.optimizer.step()
             
+            # save the lowest loss each batch
             if min_loss is None or loss < min_loss:
                 early_stop_step = 0
                 min_loss = loss
@@ -108,19 +118,24 @@ class ModelTrainer():
                 old_min_save = save_name
                 torch.save(self.model.state_dict(), os.path.join(self.model_serial_path, save_name))
 
-            print(f"Epoch: {epoch+1} | epoch loss: {loss.item()} | min loss: {min_loss.item()}", flush=True)
+            print_verbose("v", f"Epoch: {epoch+1} | epoch loss: {loss.item()} | min loss: {min_loss.item()}", verbose=self.verbose-1)
             self.scheduler.step()
             
             early_stop_step = early_stop_step + 1
             if early_stop_step == 10:
-                print("early stopping...")
+                print_verbose("v", "early stopping", verbose=self.verbose-1)
                 break
         
         torch.cuda.empty_cache()
+        # load the last saved checkpoint
         self.model.load_state_dict(torch.load(os.path.join(self.model_serial_path, save_name)))
 
-    def get_features(self, start, end, verbose=0):
+    def get_features(self, start, end):
         """function to get image features
+
+        Args:
+            start (int): index of first image in batch
+            end (int): index of last image in batch
 
         Returns:
             dict: dictionary of image paths and corresponding features
@@ -130,7 +145,6 @@ class ModelTrainer():
         features = dict()
         subset = Subset(self.dataset, list(range(start, end)))
         dataloader = DataLoader(subset, batch_size=self.batch_size, shuffle=False)
-
 
         with torch.no_grad():
             for (paths, images) in dataloader:
@@ -142,10 +156,3 @@ class ModelTrainer():
 
         torch.cuda.empty_cache()
         return features
-    
-    def __call__(self, verbose=0):
-        """call function to capsulate all pipeline in one call
-
-        Returns:
-            dict: dictionary of image paths and corresponding features
-        """
