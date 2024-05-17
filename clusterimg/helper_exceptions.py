@@ -40,6 +40,13 @@ class InvalidTransferException(Exception):
     def __str__(self):
         return("Custom exception to signal for notifying caller object that an invalid file transfer is selected")
 
+class InvalidLossException(Exception):
+    def __init__(self, message):
+        self.message = message
+        self.error_code = 904
+    def __str__(self):
+        return("Custom exception to signal for notifying caller object that an invalid loss type is selected")
+
 class OverwritePermissionException(Exception):
     def __init__(self, message):
         self.message = message
