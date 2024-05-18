@@ -8,5 +8,6 @@ TO-ADD
 TO-TRY
 
 TO-TIDY
+- read templates, masks, segmetns and attentions from a path of folder
 
 TO-FIX
