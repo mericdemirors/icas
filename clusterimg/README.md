@@ -7,7 +7,6 @@ TO-ADD
 - C/C++/CUDA optimization
 
 TO-TRY
-- pyclustering library
 
 TO-TIDY
 
