@@ -182,6 +182,12 @@ def calculate_similarity(
         print_verbose(batch_idx, "image_similarities saved(checkpoint)", verbose=verbose-1)
         lock.release()
 
+    # if passed time since last similar pair is longer than inactivation time, disable all remaining checks
+    if (now - chunk_last_work_time_dict[chunk_idx]).total_seconds() > chunk_time_threshold:
+        lock.acquire()
+        bools = bools*0
+        lock.release()
+
 # saves similarities into a json
 def save_checkpoint(batch_idx: int, path_to_write: str, image_similarities: dict, verbose: int=0):
     """saves checkpoint files of image similarities

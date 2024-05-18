@@ -5,7 +5,6 @@ Tool for clustering mixed images
 TO-ADD
 - openmp
 - C/C++/CUDA optimization
-- early stopping
 
 TO-TRY
 - pyclustering library
