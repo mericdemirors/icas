@@ -8,10 +8,9 @@ import concurrent.futures
 
 import cv2
 import numpy as np
-from tqdm.auto import tqdm
-
 import imagehash
 from PIL import Image
+from tqdm.auto import tqdm
 from datasketch import MinHash
 from skimage.metrics import structural_similarity
 

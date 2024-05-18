@@ -3,7 +3,7 @@ import shutil
 
 from helper_functions import generate_test_dataset
 from helper_exceptions import FinishException
-from clustering import Clustering
+from Clustering import Clustering
 
 test_path = os.path.join(os.path.split(os.path.dirname(os.path.abspath(__file__)))[0], "test_images")
 
@@ -24,7 +24,10 @@ for method in ["SSIM", "TM", "imagehash", "minhash", "ORB"]:
         # create second Clustering object to merge clustered test images
         clstr2 = Clustering(images_folder_path=test_path + "_clustered", method=method, num_of_threads=8, threshold=0.9,
                         batch_size=13, overwrite="Y", transfer=transfer, verbose=1, scale=(1,1), option="merge")
-        clstr2()
+        try:
+            clstr2()
+        except FinishException as e:
+            pass
 
         shutil.rmtree(test_path)
         shutil.rmtree(test_path + "_clustered")

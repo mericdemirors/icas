@@ -1,16 +1,17 @@
 import os
 import shutil
 import itertools
+
 import numpy as np
 from tqdm import tqdm
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN, HDBSCAN
+from sklearn.mixture import GaussianMixture
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
+
 import torch
 
 from helper_exceptions import *
 from helper_functions import write_clusters, print_verbose, image_transfer
-
-from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN, HDBSCAN
-from sklearn.mixture import GaussianMixture
-from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
 class DL_Clustering():
     def __init__(self, model_trainer, method: str, batch_size:int, number_of_clusters: list=[10], max_iter: list=[200],

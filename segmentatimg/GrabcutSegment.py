@@ -1,6 +1,6 @@
 # origin of the code: https://github.com/opencv/opencv/blob/master/samples/python/grabcut.py
-import numpy as np
 import cv2
+import numpy as np
 from skimage.morphology import flood_fill
 
 from helper_exceptions import *

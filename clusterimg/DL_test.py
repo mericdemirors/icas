@@ -1,7 +1,7 @@
 from DL_Datasets import *
 from DL_Models import *
 from DL_ModelTrainer import ModelTrainer
-from DL_clustering import DL_Clustering
+from DL_Clustering import DL_Clustering
 
 mt = ModelTrainer(num_of_epochs=1, lr=0.001,
                   batch_size=32, loss_type="mse",

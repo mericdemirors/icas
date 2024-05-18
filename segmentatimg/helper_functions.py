@@ -1,12 +1,11 @@
-import cv2
 import time
+
+import cv2
 import numpy as np
 from skimage.morphology import flood_fill, flood
-from skimage.segmentation import chan_vese
-from skimage.segmentation import felzenszwalb
-from skimage.segmentation import quickshift
+from skimage.segmentation import chan_vese, felzenszwalb, quickshift
 
-from grabcut_segment import GrabcutSegmentor
+from GrabcutSegment import GrabcutSegmentor
 from helper_exceptions import *
 
 def edge_segmentation(image_path:str, edge_th:int, bilateral_d:int, sigmaColor:int, sigmaSpace:int, templateWindowSize:int,

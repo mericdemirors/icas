@@ -1,13 +1,12 @@
 import os
 import shutil
 import datetime
-
-import numpy as np
-import matplotlib.pyplot as plt
-import mplcursors
-
 from itertools import combinations
 from threading import Lock
+
+import numpy as np
+import mplcursors
+import matplotlib.pyplot as plt
 
 from helper_functions import cluster, similarity_methods, calculate_similarity, print_verbose, thread_this, save_checkpoint, image_transfer, write_clusters, get_image_features
 from helper_exceptions import *

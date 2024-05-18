@@ -1,14 +1,16 @@
 import os
 import inspect
 import threading
+from threading import Lock
 
 import cv2
 import numpy as np
-from threading import Lock
 from skimage.morphology import flood
-lock = Lock()
 
-from helper_functions import *
+from helper_functions import segment_image, print_verbose, fill, unfill, put_template_segments
+from helper_exceptions import *
+
+lock = Lock()
 
 class Segmentating:
     def __init__(self:str, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),

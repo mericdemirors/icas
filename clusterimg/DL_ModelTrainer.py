@@ -1,13 +1,13 @@
 import os
-from datetime import datetime
+import datetime
 
 from tqdm import tqdm
 
 import torch
-from torch.utils.data import DataLoader, Subset
-import torchvision.models as models
 import torch.nn as nn
 import torch.optim as optim
+import torchvision.models as models
+from torch.utils.data import DataLoader, Subset
 
 from helper_functions import print_verbose
 from helper_exceptions import *
@@ -42,7 +42,7 @@ class ModelTrainer():
         self.ckpt_path = ckpt_path
         if self.ckpt_path is None:
             # if checkpoint is not given, create a new serial number
-            self.model_serial_path = f"{self.dataset.root_dir}_{type(self.model).__name__}_{self.loss_type}_{datetime.now().strftime('%m:%d:%H:%M:%S')}"
+            self.model_serial_path = f"{self.dataset.root_dir}_{type(self.model).__name__}_{self.loss_type}_{datetime.datetime.now().strftime('%m:%d:%H:%M:%S')}"
             os.makedirs(self.model_serial_path)
         else:
             # else copy the given serial number
