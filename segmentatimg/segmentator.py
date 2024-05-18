@@ -49,9 +49,9 @@ class Segmentating:
             color_weight (float): weight of color to space in quickshift. Defaults to 0.5.
             verbose (int, optional): verbose level. Defaults to 0.
         """
-        self.image_folder = image_folder
+        self.image_folder = os.path.abspath(image_folder)
         self.files = sorted([os.path.join(self.image_folder, file) for file in os.listdir(self.image_folder)])
-        self.color_picker_image_path = color_picker_image_path
+        self.color_picker_image_path = os.path.abspath(color_picker_image_path)
         self.method = method
         self.verbose = verbose
         self.template_threshold = template_threshold

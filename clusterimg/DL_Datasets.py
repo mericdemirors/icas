@@ -3,10 +3,9 @@ import cv2
 import numpy as np
 from torch.utils.data import Dataset
 
-
 class ImageDataset(Dataset):
     def __init__(self, root_dir):
-        self.root_dir = root_dir
+        self.root_dir = os.path.abspath(root_dir)
         self.x = os.listdir(self.root_dir)
         self.num_samples = len(self.x)
 

@@ -46,7 +46,7 @@ class ModelTrainer():
             os.makedirs(self.model_serial_path)
         else:
             # else copy the given serial number
-            self.model_serial_path = os.path.split(self.ckpt_path)[0]
+            self.model_serial_path = os.path.abspath(os.path.split(self.ckpt_path)[0])
 
     def get_criterion(self, loss_type: str="mse", model=None):
         """function to set loss function
@@ -129,6 +129,7 @@ class ModelTrainer():
         torch.cuda.empty_cache()
         # load the last saved checkpoint
         self.model.load_state_dict(torch.load(os.path.join(self.model_serial_path, save_name)))
+        self.ckpt_path = os.path.join(self.model_serial_path, save_name)
 
     def get_features(self, start: int, end: int):
         """function to get image features

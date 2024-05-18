@@ -103,14 +103,14 @@ def kmeans_segmentation(image_path:str, k:int, color_importance:int, verbose:int
     Returns:
         numpy.ndarray: segmented image
     """
-    image_to_process = cv2.imread(image_path)
+    image = cv2.imread(image_path)
 
     # numpy matrix that holds pixel coordinates
-    xy_image = np.array([[r,c] for r in range(image_to_process.shape[0]) for c in range(image_to_process.shape[1])]).reshape((image_to_process.shape[0], image_to_process.shape[1], 2)) / color_importance
-    pixel_data = np.concatenate([image_to_process, xy_image], axis=2)    
+    xy_image = np.array([[r,c] for r in range(image.shape[0]) for c in range(image.shape[1])]).reshape((image.shape[0], image.shape[1], 2)) / color_importance
+    pixel_data = np.concatenate([image, xy_image], axis=2)    
 
     # Convert the image to the required format for K-means (flatten to 2D array), pixels are represented as: [X, Y, COLOR_VALUES]
-    if image_to_process.shape[-1] == 3:
+    if image.shape[-1] == 3:
         pixels = pixel_data.reshape((-1, 5))
     else:
         pixels = pixel_data.reshape((-1, 3))
@@ -123,7 +123,7 @@ def kmeans_segmentation(image_path:str, k:int, color_importance:int, verbose:int
     _, labels, _ = cv2.kmeans(pixels, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
 
     labels = labels + 1
-    labels = np.reshape(labels, (image_to_process.shape[0], image_to_process.shape[1]))
+    labels = np.reshape(labels, (image.shape[0], image.shape[1]))
 
     return labels
 

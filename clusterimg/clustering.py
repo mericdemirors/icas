@@ -32,7 +32,7 @@ class Clustering():
             verbose (int, optional): verbose level. Defaults to 0.
         """
         global GLOBAL_THRESHOLD, GLOBAL_THREADS
-        self.images_folder_path = images_folder_path
+        self.images_folder_path = os.path.abspath(images_folder_path)
         self.method = method
         self.threshold = threshold
         self.batch_size = batch_size

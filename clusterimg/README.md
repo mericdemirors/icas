@@ -12,4 +12,3 @@ TO-TRY
 TO-TIDY
 
 TO-FIX
-- path passes(train() call when ckpt_path exist)

@@ -49,9 +49,9 @@ class DL_Clustering():
         self.verbose = verbose  
         
         if self.option == "merge":
-            self.result_container_folder = self.model_trainer.dataset.root_dir
+            self.result_container_folder = os.path.abspath(self.model_trainer.dataset.root_dir)
         else:
-            base_folder, images_folder_name = os.path.split(self.model_trainer.dataset.root_dir)
+            base_folder, images_folder_name = os.path.split(os.path.abspath(self.model_trainer.dataset.root_dir))
             self.result_container_folder = os.path.join(base_folder, images_folder_name + "_clustered")
 
         self.arguman_check(verbose=verbose-1)
@@ -242,7 +242,7 @@ class DL_Clustering():
             print_verbose("m", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
 
         # compute all template similarities in one pass
-        template_paths = [os.path.join(template_cluster_dict[file], file) for file in all_template_files]
+        template_paths = [os.path.abspath(os.path.join(template_cluster_dict[file], file)) for file in all_template_files]
         clusters = self.calculate_template_clusters(template_paths, verbose=verbose-1)
 
         # setting the folders for merging
