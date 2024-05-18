@@ -21,7 +21,7 @@ from global_variables import GLOBAL_THREADS
 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
 # Clustering images
-def cluster(sorted_similarities, clustering_threshold, verbose=0):
+def cluster(sorted_similarities: list, clustering_threshold: float, verbose: int=0):
     """clusters list of similarities of item pairs, if and X and Y image are more similar then clustering threshold, they are putted into same cluster, if any X and Y image has an image chain X-A-B-...-M-Y that has consecutive pair similarities bigger than threshold, they are putted into same cluster
 
     Args:
@@ -71,7 +71,7 @@ def cluster(sorted_similarities, clustering_threshold, verbose=0):
 
     return clusters, clustered_images
 
-def similarity_methods(method, images, image1_file, image2_file, verbose=0):
+def similarity_methods(method: str, images: dict, image1_file: str, image2_file: str, verbose: int=0):
     """similarity calculation between 2 image for each method
 
     Args:
@@ -106,23 +106,23 @@ def similarity_methods(method, images, image1_file, image2_file, verbose=0):
 
 # Calculating similarities of 2 images (needs to be faster, needs to have early stopping)
 def calculate_similarity(
-    tpl,
-    im1_idx,
-    im2_idx,
-    chunk_idx,
+    tpl:tuple,
+    im1_idx:int,
+    im2_idx:int,
+    chunk_idx:int,
     lock,
-    similarity_threshold,
-    image_similarities,
-    images,
+    similarity_threshold:float,
+    image_similarities:dict,
+    images:dict,
     bools,
-    last_checkpoint_time,
-    last_verbose_time,
-    chunk_last_work_time_dict,
-    batch_idx,
-    chunk_time_threshold,
-    destination_container_folder_base,
-    method,
-    verbose=0
+    last_checkpoint_time:list,
+    last_verbose_time:list,
+    chunk_last_work_time_dict:dict,
+    batch_idx:int,
+    chunk_time_threshold:int,
+    destination_container_folder_base:str,
+    method:str,
+    verbose:int=0
 ):
     """calculates 2 images similarity based on structural_similarity, this function is runned by threads. If any X and Y are found to be similar, any pair that has Y in it is discarded from calculation queue because if X and Y are similar and Y and Z are similar, then X and Z should be similar too.
 
@@ -183,7 +183,7 @@ def calculate_similarity(
         lock.release()
 
 # saves similarities into a json
-def save_checkpoint(batch_idx, path_to_write, image_similarities, verbose=0):
+def save_checkpoint(batch_idx: int, path_to_write: str, image_similarities: dict, verbose: int=0):
     """saves checkpoint files of image similarities
 
     Args:
@@ -199,7 +199,7 @@ def save_checkpoint(batch_idx, path_to_write, image_similarities, verbose=0):
     print_verbose(batch_idx, "image_similarities saved", verbose=verbose-1)
 
 # How to read checkpoint dictionary
-def load_checkpoint(path, verbose=0):
+def load_checkpoint(path: str, verbose: int=0):
     """Loads a saved checkpoint file
 
     Args:
@@ -215,7 +215,7 @@ def load_checkpoint(path, verbose=0):
     return loaded
 
 # transfers image from folder to folder
-def image_transfer(transfer, source_path, destination_path):
+def image_transfer(transfer: str, source_path: str, destination_path: str):
     """encapsulation of image transfering
 
     Args:
@@ -229,7 +229,7 @@ def image_transfer(transfer, source_path, destination_path):
         shutil.move(source_path, destination_path)
 
 # writes clusters into destination
-def write_clusters(clusters, batch_idx, destination_container_folder, outliers, transfer, verbose=0):
+def write_clusters(clusters: list, batch_idx: int, destination_container_folder: str, outliers: list, transfer: str, verbose: int=0):
     """writes image clusters to a folder
 
     Args:
@@ -256,7 +256,7 @@ def write_clusters(clusters, batch_idx, destination_container_folder, outliers, 
     print_verbose(batch_idx, str(len(clusters)) + " cluster found", verbose=verbose-1)
 
 # prints verboses in a format
-def print_verbose(verbose_type, message, verbose=0):
+def print_verbose(verbose_type, message: str, verbose: int=0):
     """Prints verbose messages
 
     Args:
@@ -289,7 +289,7 @@ def print_verbose(verbose_type, message, verbose=0):
         print(output)
 
 # threads a given function with given parameters to given number of threads
-def thread_this(func, params):
+def thread_this(func, params: list):
     """Treads given function to speed it up
 
     Args:
@@ -304,7 +304,7 @@ def thread_this(func, params):
     return results
 
 # returns images and related features dict
-def get_image_features(method, image_paths, size, scale, verbose=0):
+def get_image_features(method: str, image_paths: list, size: tuple, scale: tuple, verbose: int=0):
     """returns images and related features dict
 
     Args:
@@ -325,7 +325,7 @@ def get_image_features(method, image_paths, size, scale, verbose=0):
 
     elif method == "minhash":
         # returns most distinct n corners coordinates of image
-        def get_corner_features(gray_image, blockSize=2, ksize=3, k=0.04, top_n_corners=100, verbose=0):
+        def get_corner_features(gray_image, blockSize: int=2, ksize: int=3, k: float=0.04, top_n_corners: int=100, verbose: int=0):
             """Extracts most distinct top_n_corners location as an array
 
             Args:
@@ -350,7 +350,7 @@ def get_image_features(method, image_paths, size, scale, verbose=0):
             corner_features = np.concatenate((corner_rows, corner_cols))
             return corner_features
         
-        def get_image_corners(image_file):
+        def get_image_corners(image_file: str):
             """gets given images corner features, this method is writed to suit to thread_this() call
 
             Args:
@@ -371,7 +371,7 @@ def get_image_features(method, image_paths, size, scale, verbose=0):
             image_mh.clear()
 
     elif method == "imagehash":
-        def get_image_hash(image_file):
+        def get_image_hash(image_file: str):
             """gets given images perceptual hash, this method is writed to suit to thread_this() call
 
             Args:
@@ -389,7 +389,7 @@ def get_image_features(method, image_paths, size, scale, verbose=0):
 
     elif method == "ORB":
         orb = cv2.ORB_create()
-        def get_image_fetaures(image_file):
+        def get_image_fetaures(image_file: str):
             """gets given images ORB features, this method is writed to suit to thread_this() call
 
             Args:
@@ -410,7 +410,7 @@ def get_image_features(method, image_paths, size, scale, verbose=0):
     return image_features
 
 # reads and resizes images
-def read_and_resize(path, size=(0,0), scale=(1.0, 1.0), gray=True):
+def read_and_resize(path: str, size:tuple=(0,0), scale:tuple=(1.0, 1.0), gray=True):
     """reads and resizes image with opencv
 
     Args:
@@ -438,7 +438,7 @@ def read_and_resize(path, size=(0,0), scale=(1.0, 1.0), gray=True):
 
 
 # generates test dataset
-def generate_test_dataset(path, count, size=256, x=40, y=220, rand_RGB_value=0, rand_xy_value=5, font_scale=9, font_thickness=45):
+def generate_test_dataset(path:str, count:int, size:int=256, x:int=40, y:int=220, rand_RGB_value:int=0, rand_xy_value:int=5, font_scale:int=9, font_thickness:int=45):
     """function to generate test dataset
 
     Args:
@@ -454,7 +454,7 @@ def generate_test_dataset(path, count, size=256, x=40, y=220, rand_RGB_value=0, 
 
     """
     # generates test image
-    def generate_image(character_to_put_on):
+    def generate_image(character_to_put_on: str):
         """function to generate test dataset images
 
         Args:

@@ -13,7 +13,7 @@ from helper_functions import print_verbose
 from helper_exceptions import *
 
 class ModelTrainer():
-    def __init__(self, num_of_epochs, lr, batch_size, loss_type, dataset, model, ckpt_path=None, verbose=0):
+    def __init__(self, num_of_epochs: int, lr: float, batch_size: int, loss_type: str, dataset, model, ckpt_path: str=None, verbose: int=0):
         """class to capsulate pytorch model and dataset
 
         Args:
@@ -48,7 +48,7 @@ class ModelTrainer():
             # else copy the given serial number
             self.model_serial_path = os.path.split(self.ckpt_path)[0]
 
-    def get_criterion(self, loss_type="mse", model=None):
+    def get_criterion(self, loss_type: str="mse", model=None):
         """function to set loss function
 
         Args:
@@ -130,7 +130,7 @@ class ModelTrainer():
         # load the last saved checkpoint
         self.model.load_state_dict(torch.load(os.path.join(self.model_serial_path, save_name)))
 
-    def get_features(self, start, end):
+    def get_features(self, start: int, end: int):
         """function to get image features
 
         Args:

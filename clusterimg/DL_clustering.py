@@ -13,9 +13,9 @@ from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
 class DL_Clustering():
-    def __init__(self, model_trainer, method, batch_size, number_of_clusters=[10], max_iter=[200], DBSCAN_eps=[0.5],
-                DBSCAN_min_samples=[5], HDBSCAN_min_cluster_size=[5], HDBSCAN_max_cluster_size=[None], option="",
-                transfer="copy", overwrite=False, verbose=0):
+    def __init__(self, model_trainer, method: str, batch_size:int, number_of_clusters: list=[10], max_iter: list=[200], DBSCAN_eps: list=[0.5],
+                DBSCAN_min_samples: list=[5], HDBSCAN_min_cluster_size: list=[5], HDBSCAN_max_cluster_size: list=[None], option: str="",
+                transfer: str="copy", overwrite: bool=False, verbose: int=0):
         self.model_trainer = model_trainer
         self.method = method
         self.batch_size = batch_size
@@ -38,7 +38,7 @@ class DL_Clustering():
 
         self.arguman_check(verbose=verbose-1)
     
-    def __str__(self, verbose=0):
+    def __str__(self, verbose: int=0):
         """casting to string method for printing/debugging object attributes
 
         Args:
@@ -51,7 +51,7 @@ class DL_Clustering():
         attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
         return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
 
-    def arguman_check(self, verbose=0):
+    def arguman_check(self, verbose: int=0):
         """checks arguman validity
 
         Args:
@@ -68,13 +68,13 @@ class DL_Clustering():
         if self.transfer not in valid_transfer:
             raise(InvalidTransferException("Invalid transfer: " + self.transfer))
 
-    def get_models(self, verbose=0):
+    def get_models(self, verbose: int=0):
         """creates different models for parameter grid search
 
         Args:
             verbose (int, optional): verbose level. Defaults to 0.
         """
-        def calculate_grid_search(verbose=0):
+        def calculate_grid_search(verbose: int=0):
             """creates parameters for grid search models
 
             Args:
@@ -113,7 +113,7 @@ class DL_Clustering():
 
         return models
 
-    def find_best_model(self, models, image_embeds, verbose=0):
+    def find_best_model(self, models: list, image_embeds, verbose: int=0):
         """finds best model in grid search by clustering evaluations
 
         Args:
@@ -147,7 +147,7 @@ class DL_Clustering():
         
         return best_model
     
-    def calculate_batch_clusters(self, start, end, verbose=0):
+    def calculate_batch_clusters(self, start: int, end: int, verbose: int=0):
         features = self.model_trainer.get_features(start, end)
         paths = list(features.keys())
         image_embeds = np.array(list(features.values()))
@@ -158,7 +158,7 @@ class DL_Clustering():
         clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
         return clusters
 
-    def calculate_template_clusters(self, template_paths, verbose=0):
+    def calculate_template_clusters(self, template_paths: list, verbose: int=0):
         features = {}
         for tp in tqdm(template_paths, desc="Getting template features", leave=False):
             image = self.model_trainer.dataset.read_image(tp)
@@ -180,7 +180,7 @@ class DL_Clustering():
         clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
         return clusters
 
-    def merge_clusters_by_templates(self, batch_folder_paths, verbose=0):
+    def merge_clusters_by_templates(self, batch_folder_paths: list, verbose: int=0):
         """merges individual clusters in all batch folders into one result folder
 
         Args:
@@ -230,7 +230,7 @@ class DL_Clustering():
 
         return template_cluster_folders_to_merge_list
 
-    def create_clusters(self, batch_idx, start, end, verbose=0):
+    def create_clusters(self, batch_idx: int, start: int, end: int, verbose: int=0):
         """creates clusters of a batch of images
 
         Args:
@@ -245,7 +245,7 @@ class DL_Clustering():
         if verbose > 0:
             print("-"*70)
 
-    def process(self, verbose=0):
+    def process(self, verbose: int=0):
         """function to encapsulate all pipeline in one function
 
         Args:

@@ -12,7 +12,6 @@ TO-TRY
 - pyclustering library
 
 TO-TIDY
-- define the function parameter types
 
 TO-FIX
 - path passes(train() call when ckpt_path exist)

@@ -69,7 +69,7 @@ class Clustering():
         attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
         return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
 
-    def arguman_check(self, verbose=0):
+    def arguman_check(self, verbose: int=0):
         """checks validity of object initialization parameters
 
         Args:
@@ -86,7 +86,7 @@ class Clustering():
         if self.transfer not in valid_transfer:
             raise(InvalidTransferException("Invalid transfer: " + self.transfer))
 
-    def interactive_threshold_selection(self, num_of_files=1000, verbose=0):
+    def interactive_threshold_selection(self, num_of_files: int=1000, verbose: int=0):
         """Lets user interactively select threshold
 
         Args:
@@ -105,7 +105,7 @@ class Clustering():
         image_files = list(combinations(selected_image_files, 2))
         sim_list = [similarity_methods(self.method, images, image_pair[0], image_pair[1], verbose=verbose-1) for image_pair in image_files]
         
-        def on_hover(sel, lenght = len(selected_image_files)):
+        def on_hover(sel, lenght: int=len(selected_image_files)):
             """shows an info text if user hovers over plot
 
             Args:
@@ -133,7 +133,7 @@ class Clustering():
         plt.show() 
 
     # calculates similarities between given images
-    def calculate_batch_similarity(self, batch_idx, image_paths, verbose=0):
+    def calculate_batch_similarity(self, batch_idx: int, image_paths: list, verbose: int=0):
         """calculates similarity inside a batch
 
         Args:
@@ -168,7 +168,7 @@ class Clustering():
         
         image_similarities = {}
         # function to assign at threads
-        def calculate_similarity_for_chunk(chunk):
+        def calculate_similarity_for_chunk(chunk: list):
             """calculates similarity in chunk by calling calculate_similarity for each pair
 
             Args:
@@ -207,7 +207,7 @@ class Clustering():
         return image_similarities
 
     # calculates similarities between given templates
-    def calculate_template_similarities(self, template_paths, verbose=0):
+    def calculate_template_similarities(self, template_paths: list, verbose: int=0):
         """calculates similarity of templates
 
         Args:
@@ -262,7 +262,7 @@ class Clustering():
         
         template_similarities = {}
         # function to assign at threads
-        def calculate_similarity_for_chunk(chunk):
+        def calculate_similarity_for_chunk(chunk: list):
             """calculates similarity in chunk by calling calculate_similarity for each pair
 
             Args:
@@ -301,7 +301,7 @@ class Clustering():
         return template_similarities
 
     # function to merge batch folders clusters
-    def merge_clusters_by_templates(self, batch_folder_paths, verbose=0):
+    def merge_clusters_by_templates(self, batch_folder_paths: list, verbose: int=0):
         """merges individual clusters in all batch folders into one result folder
 
         Args:
@@ -355,7 +355,7 @@ class Clustering():
         return template_cluster_folders_to_merge_list
 
     # function to pack all things above into one call
-    def create_clusters(self, batch_idx, image_files, verbose=0):
+    def create_clusters(self, batch_idx: int, image_files: list, verbose: int=0):
         """function to do the all processing
 
         Args:
@@ -374,7 +374,7 @@ class Clustering():
             print("-"*70)
 
     # full process in one function
-    def process(self, verbose=0):
+    def process(self, verbose: int=0):
         """function to capsulate all pipeline in one call
         """
         # creating result folder
