@@ -160,13 +160,14 @@ class DL_Clustering():
 
     def calculate_template_clusters(self, template_paths, verbose=0):
         features = {}
-        for tp in template_paths:
+        for tp in tqdm(template_paths, desc="Getting template features", leave=False):
             image = self.model_trainer.dataset.read_image(tp)
             image = image[np.newaxis, ...]
             tensor_image = torch.from_numpy(image).to(self.model_trainer.device)
             features[tp] = self.model_trainer.model.embed(tensor_image)
 
         paths = list(features.keys())
+        # transforming output tensors to numpy for clustering
         tensor_values = list(features.values()) 
         numpy_values = [t.cpu().detach().numpy() for t in tensor_values]
         numpy_values = np.array(numpy_values)
@@ -264,7 +265,7 @@ class DL_Clustering():
                 os.makedirs(self.result_container_folder)
 
         if self.option != "merge":
-            for batch_idx, start in enumerate(range(0, len(self.model_trainer.dataset), self.batch_size)):
+            for batch_idx, start in tqdm(enumerate(range(0, len(self.model_trainer.dataset), self.batch_size)), desc="Creating clusters", leave=False):
                 self.create_clusters(batch_idx, start, start + self.batch_size, verbose=self.verbose-1)
 
             # if images are done in one batch terminate the code after organizing result folders
@@ -312,14 +313,14 @@ class DL_Clustering():
                 if os.path.isfile(os.path.join(self.result_container_folder, folder)):
                     os.remove(os.path.join(self.result_container_folder, folder))
 
-    def __call__(self, verbose=0):
+    def __call__(self):
         """calling the object will start the main process and catch any possible exception during
 
         Args:
             verbose (int, optional): _description_. Defaults to 0.
         """
         try:
-            self.process(verbose=verbose-1)
+            self.process(verbose=self.verbose-1)
         except (ErrorException, WrongTypeException, InvalidMethodException, InvalidOptionException, 
                 InvalidTransferException, OverwritePermissionException, InvalidLossException) as custom_e:
             print(custom_e.message)

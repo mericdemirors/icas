@@ -13,7 +13,6 @@ TO-TRY
 
 TO-TIDY
 - define the function parameter types
-- add verboses in needed places
 
 TO-FIX
 - path passes(train() call when ckpt_path exist)

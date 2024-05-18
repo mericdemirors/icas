@@ -147,7 +147,7 @@ class ModelTrainer():
         dataloader = DataLoader(subset, batch_size=self.batch_size, shuffle=False)
 
         with torch.no_grad():
-            for (paths, images) in dataloader:
+            for (paths, images) in tqdm(dataloader, desc=f"Getting image features from {start} to {end}", leave=False):
                 images = images.to(self.device)
                 
                 embeds = self.model.embed(images)
