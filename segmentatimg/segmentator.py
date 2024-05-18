@@ -12,7 +12,7 @@ from helper_functions import *
 
 class Segmentating:
     def __init__(self:str, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),
-                 method:str="", templates:list=[], attentions:list=[], segments:list=[], masks:list=[], thread_range:int=10, template_threshold:float=None,
+                 method:str="", templates_path="", attentions_path="", segments_path="", masks_path="", thread_range:int=10, template_threshold:float=None,
                  edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100, templateWindowSize:int=7, searchWindowSize:int=21,
                  h:int=10, hColor:int=10, region_size:int=40, ruler:int=30, k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100,
                  sigma:float=0.5, min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, verbose:int=0):
@@ -22,10 +22,10 @@ class Segmentating:
             image_folder (str): path to images
             color_picker_image_path (str): path to color picking image            
             method (str): segmentation method
-            templates (list, optional): templates to search in raw images. Defaults to [].
-            attentions (list, optional): template masks to where to pay attention, will be derived from templates if not provided. Defaults to [].
-            segments (list, optional): segments to paint detected templates. Defaults to [].
-            masks (list, optional): segment masks to where to paint, will be derived from segments if not provided. Defaults to [].
+            templates (str, optional): path to folder of templates to search in raw images. Defaults to [].
+            attentions (str, optional): path to folder of template masks to where to pay attention, will be derived from templates if not provided. Defaults to [].
+            segments (str, optional): path to folder of segments to paint detected templates. Defaults to [].
+            masks (str, optional): path to folder of segment masks to where to paint, will be derived from segments if not provided. Defaults to [].
             thread_range (int, optional): depth of image processings at previous and upcoming images on list. Defaults to 10.
             template_threshold (float, optional): max error rate to consider a template as matched, if None, best match is considered. Defaults to None.
                 
@@ -56,6 +56,11 @@ class Segmentating:
         self.verbose = verbose
         self.template_threshold = template_threshold
         self.threads = {}
+        templates = [cv2.imread(os.path.join(templates_path,f)) for f in sorted(os.listdir(os.path.abspath(templates_path)))]
+        attentions = [cv2.imread(os.path.join(attentions_path,f)) for f in sorted(os.listdir(os.path.abspath(attentions_path)))]
+        segments = [cv2.imread(os.path.join(segments_path,f)) for f in sorted(os.listdir(os.path.abspath(segments_path)))]
+        masks = [cv2.imread(os.path.join(masks_path,f)) for f in sorted(os.listdir(os.path.abspath(masks_path)))]
+
         self.arguman_check(templates, attentions, segments, masks)
 
         if attentions == [] and masks == []:

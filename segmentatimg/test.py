@@ -1,16 +1,17 @@
 from segmentator import Segmentating
 import cv2
 
-temp1 = cv2.imread("/home/mericdemirors/Pictures/temp1.png")
-segment1 = cv2.imread("/home/mericdemirors/Pictures/seg1.png")
-attention1 = cv2.imread("/home/mericdemirors/Pictures/att1.png")
-mask1 = cv2.imread("/home/mericdemirors/Pictures/pp1.png")
+attentions = "/home/mericdemirors/Pictures/attentions"
+masks = "/home/mericdemirors/Pictures/masks"
+segments = "/home/mericdemirors/Pictures/segments"
+templates = "/home/mericdemirors/Pictures/templates"
 
-temp2 = cv2.imread("/home/mericdemirors/Pictures/temp2.png")
-segment2 = cv2.imread("/home/mericdemirors/Pictures/seg2.png")
-attention2 = cv2.imread("/home/mericdemirors/Pictures/att2.png")
-mask2 = cv2.imread("/home/mericdemirors/Pictures/pp2.png")
-
-sgmt = Segmentating(image_folder="/home/mericdemirors/Pictures/titles", method="kmeans",
-                    templates=[temp1, temp2], template_threshold=0.1, segments=[segment1, segment2])#, attentions=[attention1, attention2], masks=[mask1, mask2])
+sgmt = Segmentating(image_folder="/home/mericdemirors/Pictures/araba", 
+                    method="kmeans", template_threshold=0.1,
+                    templates_path=templates, attentions_path=segments,
+                    segments_path=attentions, masks_path=masks)
 sgmt()
+
+
+
+
