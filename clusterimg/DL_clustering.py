@@ -3,9 +3,10 @@ import shutil
 import itertools
 import numpy as np
 from tqdm import tqdm
+import torch
 
 from helper_exceptions import *
-from helper_functions import write_clusters, print_verbose
+from helper_functions import write_clusters, print_verbose, image_transfer
 
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN, HDBSCAN
 from sklearn.mixture import GaussianMixture
@@ -154,23 +155,79 @@ class DL_Clustering():
         models = self.get_models(verbose=verbose-1)
         best_model = self.find_best_model(models, image_embeds, verbose=verbose-1)
         labels = best_model.fit_predict(image_embeds)
-        return paths, labels
+        clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
+        return clusters
 
-    def calculate_template_similarity(self, verbose=0):
-        """will be added for clustering template images
+    def calculate_template_clusters(self, template_paths, verbose=0):
+        features = {}
+        for tp in template_paths:
+            image = self.model_trainer.dataset.read_image(tp)
+            image = image[np.newaxis, ...]
+            tensor_image = torch.from_numpy(image).to(self.model_trainer.device)
+            features[tp] = self.model_trainer.model.embed(tensor_image)
+
+        paths = list(features.keys())
+        tensor_values = list(features.values()) 
+        numpy_values = [t.cpu().detach().numpy() for t in tensor_values]
+        numpy_values = np.array(numpy_values)
+        image_embeds = np.squeeze(numpy_values, axis=1)
+
+        models = self.get_models(verbose=verbose-1)
+        best_model = self.find_best_model(models, image_embeds, verbose=verbose-1)
+        labels = best_model.fit_predict(image_embeds)
+        
+        clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
+        return clusters
+
+    def merge_clusters_by_templates(self, batch_folder_paths, verbose=0):
+        """merges individual clusters in all batch folders into one result folder
 
         Args:
+            batch_folder_paths (list): list of batch folders path
             verbose (int, optional): verbose level. Defaults to 0.
-        """
-        pass
-    def merge_clusters_my_templates(self, verbose=0):
-        """will be added for clustering template images
 
-        Args:
-            verbose (int, optional): verbose level. Defaults to 0.
+        Returns:
+            list: list of merged clusters
         """
-        pass
+        # get one template from all clusters at each batch
+        template_cluster_dict = {}
+        for batch_folder in batch_folder_paths:
+            for cluster_folder in os.listdir(batch_folder):
+                if cluster_folder != "outliers":
+                    template_im = os.listdir(os.path.join(batch_folder, cluster_folder))[0]
+                    template_cluster_dict[template_im] = os.path.join(batch_folder, cluster_folder)
+        all_template_files = sorted(list(template_cluster_dict.keys()))
 
+        if self.option != "merge":
+            print_verbose("r", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
+        if self.option == "merge":
+            print_verbose("m", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
+
+        # compute all template similarities in one pass
+        template_paths = [os.path.join(template_cluster_dict[file], file) for file in all_template_files]
+        clusters = self.calculate_template_clusters(template_paths, verbose=verbose-1)
+
+        # setting the folders for merging
+        all_cluster_folder_paths = []
+        for batch_folder in batch_folder_paths:
+            for cluster_folder in os.listdir(batch_folder):
+                if cluster_folder != "outliers":
+                    all_cluster_folder_paths.append([os.path.join(batch_folder, cluster_folder)])
+        will_be_merged_clusters = []
+        for c in clusters:
+            folders_to_merge = [os.path.split(t)[0] for t in c]
+            will_be_merged_clusters.append(folders_to_merge)
+            for folder in folders_to_merge:
+                all_cluster_folder_paths.remove([folder])
+        outlier_folders = []
+        for batch_folder in batch_folder_paths:
+            for cluster_folder in os.listdir(batch_folder):
+                if cluster_folder == "outliers":
+                    outlier_folders.append(os.path.join(batch_folder, cluster_folder))
+
+        template_cluster_folders_to_merge_list = all_cluster_folder_paths + will_be_merged_clusters + [outlier_folders]
+
+        return template_cluster_folders_to_merge_list
 
     def create_clusters(self, batch_idx, start, end, verbose=0):
         """creates clusters of a batch of images
@@ -181,8 +238,7 @@ class DL_Clustering():
             end (int): index of last image in batch
             verbose (int, optional): verbose level. Defaults to 0.
         """
-        paths, labels = self.calculate_batch_clusters(start, end, verbose=verbose-1)
-        clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
+        clusters = self.calculate_batch_clusters(start, end, verbose=verbose-1)
         write_clusters(clusters, batch_idx, self.result_container_folder, [], self.transfer, verbose=verbose-1)
         
         if verbose > 0:
@@ -221,7 +277,40 @@ class DL_Clustering():
         if self.option == "dontmerge":
             print_verbose("f", "finishing because of no merge request", verbose=verbose-1)
 
-        # TODO merging templates will be added
+
+        # gets each batchs folder
+        batch_folder_paths = sorted([os.path.join(self.result_container_folder, f)
+                                    for f in os.listdir(self.result_container_folder)
+                                    if os.path.isdir(os.path.join(self.result_container_folder, f))])
+
+        # merge each batch to get which clusters folders should be merged together
+        template_cluster_folders_to_merge_list = self.merge_clusters_by_templates(batch_folder_paths, verbose=verbose-1)
+
+        if self.option != "merge":
+            print_verbose("r", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
+        if self.option == "merge":
+            print_verbose("m", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
+        
+        # creating result folder and merging cluster folders
+        result_folder_path = os.path.join(self.result_container_folder, "results")
+        os.mkdir(result_folder_path)
+        for e, template_cluster_folders_to_merge in enumerate(template_cluster_folders_to_merge_list):
+            cluster_folder_path = os.path.join(result_folder_path, "cluster_" + str(e))
+            if e == len(template_cluster_folders_to_merge_list) - 1:
+                cluster_folder_path = os.path.join(result_folder_path, "outliers")
+
+            os.mkdir(cluster_folder_path)
+            for template_cluster_folder in template_cluster_folders_to_merge:
+                for file in os.listdir(template_cluster_folder):
+                    image_transfer(self.transfer, os.path.join(template_cluster_folder, file), os.path.join(cluster_folder_path, file))
+                    
+        # removing unnecessary files and folders after merging results
+        for folder in os.listdir(self.result_container_folder):
+            if folder != "results":
+                if os.path.isdir(os.path.join(self.result_container_folder, folder)):
+                    shutil.rmtree(os.path.join(self.result_container_folder, folder))
+                if os.path.isfile(os.path.join(self.result_container_folder, folder)):
+                    os.remove(os.path.join(self.result_container_folder, folder))
 
     def __call__(self, verbose=0):
         """calling the object will start the main process and catch any possible exception during

@@ -13,11 +13,15 @@ class ImageDataset(Dataset):
     def __len__(self):
         return self.num_samples
 
+    def read_image(self, image_path):
+        image = image = cv2.imread(image_path).astype(np.float32)/255
+        image = np.moveaxis(image, 2, 0)
+        return image
+
     def __getitem__(self, idx):
         image_name = self.x[idx]
         image_path = os.path.join(self.root_dir, image_name)
         
-        image = cv2.imread(image_path).astype(np.float32)/255
-        image = np.moveaxis(image, 2, 0)
+        image = self.read_image(image_path)
 
         return image_path, image
