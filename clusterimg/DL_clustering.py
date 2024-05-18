@@ -13,9 +13,27 @@ from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
 class DL_Clustering():
-    def __init__(self, model_trainer, method: str, batch_size:int, number_of_clusters: list=[10], max_iter: list=[200], DBSCAN_eps: list=[0.5],
-                DBSCAN_min_samples: list=[5], HDBSCAN_min_cluster_size: list=[5], HDBSCAN_max_cluster_size: list=[None], option: str="",
-                transfer: str="copy", overwrite: bool=False, verbose: int=0):
+    def __init__(self, model_trainer, method: str, batch_size:int, number_of_clusters: list=[10], max_iter: list=[200],
+                 DBSCAN_eps: list=[0.5], DBSCAN_min_samples: list=[5], HDBSCAN_min_cluster_size: list=[5],
+                 HDBSCAN_max_cluster_size: list=[None], option: str="", transfer: str="copy",
+                 overwrite: bool=False, verbose: int=0):
+        """creates deep learning clustering object
+
+        Args:
+            model_trainer (ModelTrainer): object to hold and manage deep learning model and dataset
+            method (str): clustering method
+            batch_size (int): batch size of clustering
+            number_of_clusters (list, optional): list of number of clusters in dataset, used in parameter grid search. Defaults to [10].
+            max_iter (list, optional): list of max_iter values, used in parameter grid search. Defaults to [200].
+            DBSCAN_eps (list, optional): list of DBSCAN_eps values, used in parameter grid search. Defaults to [0.5].
+            DBSCAN_min_samples (list, optional): list of DBSCAN_min_samples values, used in parameter grid search. Defaults to [5].
+            HDBSCAN_min_cluster_size (list, optional): list of HDBSCAN_min_cluster_size values, used in parameter grid search. Defaults to [5].
+            HDBSCAN_max_cluster_size (list, optional): list of HDBSCAN_max_cluster_size values, used in parameter grid search. Defaults to [None].
+            option (str, optional): clustering option. Defaults to "".
+            transfer (str, optional): file transferin option. Defaults to "copy".
+            overwrite (bool, optional): permission to overwrite old clustered folder. Defaults to False.
+            verbose (int, optional): verbose level. Defaults to 0.
+        """
         self.model_trainer = model_trainer
         self.method = method
         self.batch_size = batch_size
@@ -148,6 +166,16 @@ class DL_Clustering():
         return best_model
     
     def calculate_batch_clusters(self, start: int, end: int, verbose: int=0):
+        """calculates the clusters in a batch
+
+        Args:
+            start (int): index of first image in batch
+            end (int): index of last image in batch
+            verbose (int, optional): verbose level. Defaults to 0.
+
+        Returns:
+            list: list of clusters
+        """
         features = self.model_trainer.get_features(start, end)
         paths = list(features.keys())
         image_embeds = np.array(list(features.values()))
@@ -159,6 +187,15 @@ class DL_Clustering():
         return clusters
 
     def calculate_template_clusters(self, template_paths: list, verbose: int=0):
+        """calculates clusters of templates
+
+        Args:
+            template_paths (list): list of template images
+            verbose (int, optional): verbose level. Defaults to 0.
+
+        Returns:
+            list: list of clusters
+        """
         features = {}
         for tp in tqdm(template_paths, desc="Getting template features", leave=False):
             image = self.model_trainer.dataset.read_image(tp)
@@ -314,16 +351,9 @@ class DL_Clustering():
                     os.remove(os.path.join(self.result_container_folder, folder))
 
     def __call__(self):
-        """calling the object will start the main process and catch any possible exception during
+        """calling the object will start the main process
 
         Args:
             verbose (int, optional): _description_. Defaults to 0.
         """
-        try:
-            self.process(verbose=self.verbose-1)
-        except (ErrorException, WrongTypeException, InvalidMethodException, InvalidOptionException, 
-                InvalidTransferException, OverwritePermissionException, InvalidLossException) as custom_e:
-            print(custom_e.message)
-            exit(custom_e.error_code)
-        except FinishException as fe:
-            print(fe.message)
+        self.process(verbose=self.verbose-1)

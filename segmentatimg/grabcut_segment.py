@@ -27,7 +27,7 @@ class GrabcutSegmentor():
         self.currently_drawing_rect = False  # flag for rectangle action
         self.rect_or_mask = -1               # flag for selecting rect or mask mode
 
-    def annotation_event_listener(self, event, x, y, flags, param):
+    def annotation_event_listener(self, event, x:int, y:int, flags, param):
         """mouse callbacks for annotation types
 
         Args:
@@ -82,7 +82,7 @@ class GrabcutSegmentor():
             self.image = self.altered.copy()
             cv2.circle(self.mask, (x,y), self.thickness, self.paint_dict["val"], -1)
 
-    def on_trackbar_change(self, value):
+    def on_trackbar_change(self, value:int):
         """function to update brush thickness with window trackbar
 
         Args:
@@ -101,7 +101,17 @@ class GrabcutSegmentor():
         segments[segments!=0] = 1
         segments = segments - 1 # now -1 means background, 0 means foreground
 
-        def label_the_segments(image, segment_value, start_id=1):
+        def label_the_segments(image, segment_value:int, start_id:int=1):
+            """labels the seperate segments with ids
+
+            Args:
+                image (numpy.npdarray): image to label
+                segment_value (int): which segments to label
+                start_id (int, optional): starting id of labels. Defaults to 1.
+
+            Returns:
+                numpy.ndarray: labeled image
+            """
             segment_pixels = np.where(image == segment_value)
             segment_id = start_id
             while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
@@ -120,7 +130,7 @@ class GrabcutSegmentor():
         last_id = label_the_segments(segments, segment_value=-1, start_id=last_id)
         return segments
 
-    def segment(self, file_path):
+    def segment(self, file_path:str):
         """function to interactively segment with grabcut
 
         Args:

@@ -8,6 +8,5 @@ TO-ADD
 TO-TRY
 
 TO-TIDY
-- define the function parameter types
 
 TO-FIX

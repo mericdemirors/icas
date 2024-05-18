@@ -443,13 +443,6 @@ class Clustering():
 
     # call method to capsulate process function and custom exceptions
     def __call__(self):
-        """calling the object will start the main process and catch any possible exception during
+        """calling the object will start the main process
         """
-        try:
-            self.process()
-        except (ErrorException, WrongTypeException, InvalidMethodException, InvalidOptionException, 
-                InvalidTransferException, OverwritePermissionException) as custom_e:
-            print(custom_e.message)
-            exit(custom_e.error_code)
-        except FinishException as fe:
-            print(fe.message)
+        self.process()

@@ -11,11 +11,11 @@ lock = Lock()
 from helper_functions import *
 
 class Segmentating:
-    def __init__(self, image_folder, color_picker_image_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),
-                 method="", templates=[], attentions=[], segments=[], masks=[], thread_range=10, template_threshold=None, edge_th = 60,
-                 bilateral_d = 7, sigmaColor = 100, sigmaSpace = 100, templateWindowSize = 7, searchWindowSize = 21, h = 10, hColor = 10,
-                 region_size=40, ruler=30, k=15, color_importance=5, number_of_bins=20, segment_scale=100, sigma=0.5, min_segment_size=100,
-                 segment_size=100, color_weight=0.5, verbose=0):
+    def __init__(self:str, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),
+                 method:str="", templates:list=[], attentions:list=[], segments:list=[], masks:list=[], thread_range:int=10, template_threshold:float=None,
+                 edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100, templateWindowSize:int=7, searchWindowSize:int=21,
+                 h:int=10, hColor:int=10, region_size:int=40, ruler:int=30, k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100,
+                 sigma:float=0.5, min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, verbose:int=0):
         """initializing segmenting object
 
         Args:
@@ -101,7 +101,7 @@ class Segmentating:
         attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
         return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
 
-    def arguman_check(self, templates, attentions, segments, masks, verbose=0):
+    def arguman_check(self, templates:list, attentions:list, segments:list, masks:list, verbose:int=0):
         """checks validity of object initialization parameters
 
         Args:
@@ -166,7 +166,7 @@ class Segmentating:
             self.orig_painted_pixels = np.zeros(self.segmented_image.shape)
         cv2.destroyAllWindows()
 
-    def display_images(self, file_no):
+    def display_images(self, file_no:int):
         """refresh the image displays only if a change happend
 
         Args:
@@ -179,7 +179,7 @@ class Segmentating:
                 cv2.imshow("Painter Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
             self.refresh_images = False
 
-    def click_event_listener(self, event, x, y, flags, callback_info):
+    def click_event_listener(self, event, x:int, y:int, flags, callback_info:dict):
         """detects mouse inputs and manages information dictionary
 
         Args:
@@ -234,7 +234,7 @@ class Segmentating:
                 callback_info["first_cut"] = callback_info["second_cut"]
                 callback_info["second_cut"] = (x, y)
 
-    def color_event_listener(self, event, x, y, flags, color_info):
+    def color_event_listener(self, event, x:int, y:int, flags, color_info:dict):
         """detects mouse inputs and manages information dictionary
 
         Args:
@@ -250,7 +250,7 @@ class Segmentating:
             color_info['y'] = y
             color_info['clicked'] = True
 
-    def display_color_picker(self, callback_info, color_info):
+    def display_color_picker(self, callback_info:dict, color_info:dict):
         """imshows color picker image and extra informations for user
 
         Args:
@@ -276,7 +276,7 @@ class Segmentating:
 
         cv2.imshow("Color Picker", color_picker_image_display)
 
-    def create_thread(self, file_no, verbose=0):
+    def create_thread(self, file_no:int, verbose:int=0):
         """function to start thread processing and return thread
 
         Args:
@@ -287,7 +287,7 @@ class Segmentating:
             threading.Thread: thread that is created for processing
         """
 
-        def pass_image_to_thread(file_no, verbose=0):
+        def pass_image_to_thread(file_no:int, verbose:int=0):
             """Function to process segment images with thread
 
             Args:
@@ -322,7 +322,7 @@ class Segmentating:
         thread.start()
         return thread
 
-    def save_masks(self, mask_path, result_image, painted_pixels, verbose=0):
+    def save_masks(self, mask_path:str, result_image, painted_pixels, verbose:int=0):
         """saves each segment mask individualy
 
         Args:
@@ -341,13 +341,13 @@ class Segmentating:
                 mask[painted_pixels == 0] = [0,0,0]
                 cv2.imwrite(mask_path + "(R:{},G:{},B:{})".format(color[2], color[1], color[0]) + ".png", mask)
 
-    def process_keyboard_input(self, file_no, ctrl_z_stack, key, verbose=0):
+    def process_keyboard_input(self, file_no:int, ctrl_z_stack:list, key, verbose:int=0):
         """processes keyboard inputs
 
         Args:
             file_no (int): image file number
             ctrl_z_stack (list): list of last actions for reverse
-            key (str): keyboard input
+            key (opencv keyboard input): keyboard input
             verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
@@ -384,7 +384,7 @@ class Segmentating:
         elif key == ord('t'): # template match
             return "template"
 
-    def process_color_picker_input(self, color_info, previous_color):
+    def process_color_picker_input(self, color_info:dict, previous_color):
         """selects color
 
         Args:
@@ -403,7 +403,7 @@ class Segmentating:
         else:
             return previous_color
 
-    def take_action(self, ctrl_z_stack, color, callback_info, action_type=""):
+    def take_action(self, ctrl_z_stack:list, color, callback_info:dict, action_type:str=""):
         """processes taken action
 
         Args:
@@ -454,7 +454,7 @@ class Segmentating:
             self.refresh_images = True
             ctrl_z_stack.append((previous_result_image.copy(), previous_segmented_image.copy(), previous_painted_pixels.copy()))
 
-    def manual_segmenting(self, file_no, verbose=0):
+    def manual_segmenting(self, file_no:int, verbose:int=0):
         """segments given image and saves it to output folder
 
         Args:
@@ -484,7 +484,7 @@ class Segmentating:
         while True:
             key = cv2.waitKey(1)
             self.display_color_picker(callback_info, color_info)
-            action = self.process_keyboard_input(file_no, ctrl_z_stack, key, verbose=0)
+            action = self.process_keyboard_input(file_no, ctrl_z_stack, key, verbose=verbose-1)
             if action and action != "template":
                 return action
             
@@ -492,7 +492,7 @@ class Segmentating:
             self.take_action(ctrl_z_stack, color, callback_info, action_type=action)
             self.display_images(file_no)
 
-    def process(self, verbose=0):
+    def process(self, verbose:int=0):
         """function to segment images in a folder in order and save them to output folder
         
         Args:
@@ -531,7 +531,7 @@ class Segmentating:
         self.thread_stop = True
         cv2.destroyAllWindows()
 
-    def grabcut_process(self, verbose=0):
+    def grabcut_process(self, verbose:int=0):
         """seperated process function for grabcut method since interactive grabcut segmentationis doen require threads
 
         Args:
@@ -559,7 +559,7 @@ class Segmentating:
         cv2.destroyAllWindows()
 
     def __call__(self):
-        """calling the object will start the main process and catch any possible exception during
+        """calling the object will start the main process and catch any possible exception during process
         """
         try:
             os.makedirs(self.save_folder, exist_ok=True)
@@ -567,11 +567,6 @@ class Segmentating:
                 self.grabcut_process(self.verbose-1)
             else:
                 self.process(verbose=self.verbose-1)
-        except (ErrorException, WrongTypeException, GrabcutSegmentorQuitException, ColorPickerException,
-                NotMatchingTemplatesAndSegmentsException, NotMatchingAttentionAndMasksException) as custom_e:
+        except Exception as custom_e:
             self.thread_stop = True
-            print(custom_e.message)
-            exit(custom_e.error_code)
-        except ThreadProcessException as tpe:
-            print(tpe.message)
-            exit(tpe.error_code)
+            raise(custom_e)
