@@ -48,6 +48,13 @@ class GrabcutSegmentorQuitException(Exception):
     def __str__(self):
         return("Custom exception to signal for notifying caller object that grabcut segmentation has been quitted midway")
 
+class samPromptGenerationQuitException(Exception):
+    def __init__(self, message:str):
+        self.message = message
+        self.error_code = 1900
+    def __str__(self):
+        return("Custom exception to signal for notifying caller object that sam prompt generation has been quitted midway")
+
 class ThreadProcessException(Exception):
     def __init__(self, message:str):
         self.message = message
