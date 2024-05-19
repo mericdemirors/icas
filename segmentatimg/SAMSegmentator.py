@@ -112,6 +112,31 @@ class SAMSegmentator():
                 self.reset()
                 self.image = self.altered = self.original.copy()
 
+    def label_the_segments(self, image, segment_value:int, start_id:int=1):
+        """labels the seperate segments with ids
+
+        Args:
+            image (numpy.npdarray): image to label
+            segment_value (int): which segments to label
+            start_id (int, optional): starting id of labels. Defaults to 1.
+
+        Returns:
+            numpy.ndarray: labeled image
+        """
+        segment_pixels = np.where(image == segment_value)
+        segment_id = start_id
+        while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
+            ri, ci = segment_pixels[0][0], segment_pixels[1][0] # get a segment pixel
+            
+            image = flood_fill(image, (ri, ci), segment_id, connectivity=1, in_place=True) # floodfill segment
+            extracted_segment = np.array(image == image[ri][ci]).astype(np.int16) # extract only segment as binary
+            extracted_segment = cv2.dilate(extracted_segment, np.ones((3,3)), iterations=1) # expand segment borders by one pixel to remove edges
+            np.putmask(image, extracted_segment != 0, segment_id) # overwrite expanded segment to image
+
+            segment_id = segment_id + 1
+            segment_pixels = np.where(image == segment_value)
+        return segment_id
+
     def get_label_from_SAM_auto_output(self, SAM_auto_output, verbose=0):
         """creates labeled image from SAM output
 
@@ -127,19 +152,8 @@ class SAMSegmentator():
         for e,mask in enumerate(masks):
             labeled_image[mask] = e
 
-        # segment the unlabeled pixels
-        segment_pixels = np.where(labeled_image == 0)
-        segment_id = labeled_image.max()+1
-        while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
-            ri, ci = segment_pixels[0][0], segment_pixels[1][0] # get a segment pixel
-            
-            labeled_image = flood_fill(labeled_image, (ri, ci), segment_id, connectivity=1, in_place=True) # floodfill segment
-            extracted_segment = np.array(labeled_image == labeled_image[ri][ci]).astype(np.int16) # extract only segment as binary
-            extracted_segment = cv2.dilate(extracted_segment, np.ones((3,3)), iterations=1) # expand segment borders by one pixel to remove edges
-            np.putmask(labeled_image, extracted_segment != 0, segment_id) # overwrite expanded segment to labeled_image
-
-            segment_id = segment_id + 1
-            segment_pixels = np.where(labeled_image == 0)
+        # labeling the backgroun segments
+        labeled_image = self.label_the_segments(labeled_image, 0, labeled_image.max()+1)
 
         return labeled_image
     
@@ -156,32 +170,10 @@ class SAMSegmentator():
         # mark masked pixels with -1
         labeled_image[SAM_with_prompt_output_mask] = -1
 
-        # label the masked pixels starting from 1
-        segment_pixels = np.where(labeled_image == -1)
-        segment_id = 1
-        while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
-            ri, ci = segment_pixels[0][0], segment_pixels[1][0] # get a segment pixel
-            
-            labeled_image = flood_fill(labeled_image, (ri, ci), segment_id, connectivity=1, in_place=True) # floodfill segment
-            extracted_segment = np.array(labeled_image == labeled_image[ri][ci]).astype(np.int16) # extract only segment as binary
-            extracted_segment = cv2.dilate(extracted_segment, np.ones((3,3)), iterations=1) # expand segment borders by one pixel to remove edges
-            np.putmask(labeled_image, extracted_segment != 0, segment_id) # overwrite expanded segment to labeled_image
-
-            segment_id = segment_id + 1
-            segment_pixels = np.where(labeled_image == -1)
-
-        # label the not masked pixels from last id
-        segment_pixels = np.where(labeled_image == 0)
-        while len(segment_pixels[0]) != 0: # while image has pixels with value 0 which means non-labeled segment
-            ri, ci = segment_pixels[0][0], segment_pixels[1][0] # get a segment pixel
-            
-            labeled_image = flood_fill(labeled_image, (ri, ci), segment_id, connectivity=1, in_place=True) # floodfill segment
-            extracted_segment = np.array(labeled_image == labeled_image[ri][ci]).astype(np.int16) # extract only segment as binary
-            extracted_segment = cv2.dilate(extracted_segment, np.ones((3,3)), iterations=1) # expand segment borders by one pixel to remove edges
-            np.putmask(labeled_image, extracted_segment != 0, segment_id) # overwrite expanded segment to labeled_image
-
-            segment_id = segment_id + 1
-            segment_pixels = np.where(labeled_image == 0)
+        # labeling the masked pixels
+        labeled_image = self.label_the_segments(labeled_image, -1, 1)
+        # labeling the non-masked pixels
+        labeled_image = self.label_the_segments(labeled_image, 0, labeled_image.max()+1)
 
         return labeled_image
 
