@@ -13,7 +13,9 @@ from helper_exceptions import *
 from global_variables import GLOBAL_THREADS, GLOBAL_THRESHOLD
 
 class Clustering():
-    def __init__(self, images_folder_path: str, method: str, batch_size: int, threshold: float=None, num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="", transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
+    def __init__(self, images_folder_path: str, method: str, batch_size: int, threshold: float=None,
+                 num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="",
+                 transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
         """initializing clustering object
 
         Args:
@@ -111,7 +113,7 @@ class Clustering():
                 sel (<class 'mplcursors._pick_info.Selection'>): interactive selector 
                 lenght (int, optional): number of selected files for interactive selection. Defaults to len(selected_image_files).
             """
-            sel.annotation.set_text("approximate number of similar pairs in each " + str(lenght) + " image: " + str(int((2*sel.target[0])**0.5 + 1)) + ", threshold: " + str(sel.target[1])[:7])
+            sel.annotation.set_text(f"approximate number of similar pairs in each {lenght} image: {int((2*sel.target[0])**0.5 + 1)}, threshold: {str(sel.target[1])[:7]}")
         def on_click(event):
             """sets threshold on clicked position
 

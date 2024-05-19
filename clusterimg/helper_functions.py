@@ -21,7 +21,11 @@ bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
 # Clustering images
 def cluster(sorted_similarities: list, clustering_threshold: float, verbose: int=0):
-    """clusters list of similarities of item pairs, if and X and Y image are more similar then clustering threshold, they are putted into same cluster, if any X and Y image has an image chain X-A-B-...-M-Y that has consecutive pair similarities bigger than threshold, they are putted into same cluster
+    """clusters list of similarities of item pairs,
+    if and X and Y image are more similar then clustering threshold, 
+    they are putted into same cluster,
+    if any X and Y image has an image chain X-A-B-...-M-Y that has 
+    consecutive pair similarities bigger than threshold, they are putted into same cluster
 
     Args:
         sorted_similarities (list): list of item pairs and their similarities in form [((X, Y), similarity_point), ...]
@@ -123,7 +127,10 @@ def calculate_similarity(
     method:str,
     verbose:int=0
 ):
-    """calculates 2 images similarity based on structural_similarity, this function is runned by threads. If any X and Y are found to be similar, any pair that has Y in it is discarded from calculation queue because if X and Y are similar and Y and Z are similar, then X and Z should be similar too.
+    """calculates 2 images similarity based on structural_similarity,
+    this function is runned by threads. If any X and Y are found to be similar,
+    any pair that has Y in it is discarded from calculation queue
+    because if X and Y are similar and Y and Z are similar, then X and Z should be similar too.
 
     Args:
         tpl (tuple): tuple of image paths pair
@@ -326,7 +333,8 @@ def get_image_features(method: str, image_paths: list, size: tuple, scale: tuple
     image_features = {}
 
     if method == "SSIM":
-        image_features = {image_file:read_and_resize(image_file, size, scale) for image_file in tqdm(image_paths, desc="Reading images for SSIM, may take a while", leave=False)}
+        image_features = {image_file:read_and_resize(image_file, size, scale) for image_file in 
+                          tqdm(image_paths, desc="Reading images for SSIM, may take a while", leave=False)}
 
     elif method == "minhash":
         # returns most distinct n corners coordinates of image
@@ -410,7 +418,8 @@ def get_image_features(method: str, image_paths: list, size: tuple, scale: tuple
         image_features = {image_file:results[e] for e, image_file in enumerate(image_paths)}
 
     elif method == "TM":
-        image_features = {image_file:read_and_resize(image_file, size, scale, gray=False) for image_file in tqdm(image_paths, desc="Reading images for TM, may take a while", leave=False)}
+        image_features = {image_file:read_and_resize(image_file, size, scale, gray=False) for image_file in
+                          tqdm(image_paths, desc="Reading images for TM, may take a while", leave=False)}
 
     return image_features
 

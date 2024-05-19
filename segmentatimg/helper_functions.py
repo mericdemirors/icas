@@ -105,7 +105,8 @@ def kmeans_segmentation(image_path:str, k:int, color_importance:int, verbose:int
     image = cv2.imread(image_path)
 
     # numpy matrix that holds pixel coordinates
-    xy_image = np.array([[r,c] for r in range(image.shape[0]) for c in range(image.shape[1])]).reshape((image.shape[0], image.shape[1], 2)) / color_importance
+    xy_image = np.array([[r,c] for r in range(image.shape[0]) for c in range(image.shape[1])]
+                        ).reshape((image.shape[0], image.shape[1], 2)) / color_importance
     pixel_data = np.concatenate([image, xy_image], axis=2)    
 
     # Convert the image to the required format for K-means (flatten to 2D array), pixels are represented as: [X, Y, COLOR_VALUES]

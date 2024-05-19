@@ -96,7 +96,8 @@ class Segmentating:
         self.thread_stop = False # indicates when to stop threads
 
         self.segment_image_parameters = locals()
-        self.segment_image_parameters = {k: v for k, v in self.segment_image_parameters.items() if k in inspect.signature(segment_image).parameters}
+        self.segment_image_parameters = {k: v for k, v in self.segment_image_parameters.items()
+                                         if k in inspect.signature(segment_image).parameters}
         self.SAMSegmentator = SAMSegmentator
 
     def __str__(self):
@@ -480,7 +481,8 @@ class Segmentating:
         cv2.namedWindow("Color Picker", flags = cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.imshow("Color Picker", self.color_picker_image)
 
-        callback_info = {'clicked': False, 'x': -1, 'y': -1, 'action':"", "first_cut":None, "second_cut":None, 'continuous_filling': False, 'continuous_unfilling': False}
+        callback_info = {'clicked': False, 'x': -1, 'y': -1, 'action':"", "first_cut":None,
+                         "second_cut":None, 'continuous_filling': False, 'continuous_unfilling': False}
         cv2.setMouseCallback("Processed Image " + str(file_no), self.click_event_listener, callback_info)
 
         color_info = {'clicked': False, 'x': -1, 'y': -1}
@@ -532,7 +534,8 @@ class Segmentating:
                 thread.join()
                 exception = self.segmented_image_dict[image_path][0]
                 if type(exception) in [ErrorException,WrongTypeException]:
-                    raise(ThreadProcessException("During thread processes following Exception raised with error code " + str(exception.error_code) +":\n" + str(exception) + ": " + exception.message))
+                    raise(ThreadProcessException("During thread processes following Exception raised with error code " +
+                                                 str(exception.error_code) +":\n" + str(exception) + ": " + exception.message))
                 else:
                     raise(Exception(exception))
 
