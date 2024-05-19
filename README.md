@@ -9,9 +9,9 @@ TO-DO
 TO-TRY
 
 TO-ADD
-- LICENCE for SAM
+- documentation
 
 TO-TIDY
-- requirements
+- requirement check
 
 TO-FIX
