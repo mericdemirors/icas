@@ -5,9 +5,10 @@ import numpy as np
 from skimage.morphology import flood_fill, flood
 from skimage.segmentation import chan_vese, felzenszwalb, quickshift
 
-from GrabcutSegment import GrabcutSegmentor
+from GrabcutSegmentator import GrabcutSegmentator
 from helper_exceptions import *
 
+# edge segmentation
 def edge_segmentation(image_path:str, edge_th:int, bilateral_d:int, sigmaColor:int, sigmaSpace:int, templateWindowSize:int,
                       searchWindowSize:int, h:int, hColor:int, verbose:int=0):
     """edge segmentation
@@ -64,6 +65,7 @@ def edge_segmentation(image_path:str, edge_th:int, bilateral_d:int, sigmaColor:i
     
     return edge_image
 
+# superpixel segmentation
 def superpixel_segmentation(image_path:str, region_size:int, ruler:int, verbose:int=0):
     """segments image with opencv superpixel
 
@@ -90,6 +92,7 @@ def superpixel_segmentation(image_path:str, region_size:int, ruler:int, verbose:
     
     return superpixel_mask + 1 
 
+# kmeans segmentation
 def kmeans_segmentation(image_path:str, k:int, color_importance:int, verbose:int=0):
     """segments image with opencv kmeans
 
@@ -127,6 +130,7 @@ def kmeans_segmentation(image_path:str, k:int, color_importance:int, verbose:int
 
     return labels
 
+# slickmeans segmentation
 def slickmeans_segmentation(image_path:str, region_size:int, ruler:int, k:int, verbose:int=0):
     """segmentation with first slic then kmeans to slic centers
 
@@ -165,6 +169,7 @@ def slickmeans_segmentation(image_path:str, region_size:int, ruler:int, k:int, v
 
     return segmented_image[:,:,0]
 
+# chan_vase segmentation
 def chan_vase_segmentation(image_path:str, number_of_bins:int, verbose:int=0):
     """segmenting image with chan vase segmenting
 
@@ -188,6 +193,7 @@ def chan_vase_segmentation(image_path:str, number_of_bins:int, verbose:int=0):
 
     return result
 
+# felzenszwalb segmentation
 def felzenszwalb_segmentation(image_path:str, segment_scale:int, sigma:float, min_segment_size:int, verbose:int=0):
     """segmenting image with felzenszwalb segmentation
 
@@ -206,6 +212,7 @@ def felzenszwalb_segmentation(image_path:str, segment_scale:int, sigma:float, mi
     
     return segmented_image + 1
 
+# quickshift segmentation
 def quickshift_segmentation(image_path:str, segment_size:int, color_weight:float, verbose:int=0):
     """segmenting image with quickshift segmentation
 
@@ -223,6 +230,7 @@ def quickshift_segmentation(image_path:str, segment_size:int, color_weight:float
     
     return segmented_image + 1
 
+# graph segmentation
 def graph_segmentation(image_path:str, k:int, min_segment_size:int, sigma:float, verbose:int=0):
     """segmenting image with graph segmentation
 
@@ -244,6 +252,7 @@ def graph_segmentation(image_path:str, k:int, min_segment_size:int, sigma:float,
 
     return labels
 
+# grabcut segmentation
 def grabcut_segmentation(image_path:str, verbose:int=0):
     """segmenting image with interactive grabcut segmentation 
 
@@ -254,10 +263,11 @@ def grabcut_segmentation(image_path:str, verbose:int=0):
     Returns:
         numpy.ndarray: segmented image
     """
-    gb = GrabcutSegmentor()
+    gb = GrabcutSegmentator()
     labels = gb.segment(image_path)
     return labels
 
+# SAM segmentation
 def SAM_segmentation(image_path:str, SAMSegmentator, verbose:int=0):
     """segmenting image with SAM segmentation 
 
@@ -271,7 +281,7 @@ def SAM_segmentation(image_path:str, SAMSegmentator, verbose:int=0):
     labels = SAMSegmentator.segment(image_path)
     return labels
 
-
+# capsulates all segmentation techniques in one function
 def segment_image(image_path:str="", method:str="", edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100,
                   templateWindowSize:int=7, searchWindowSize:int=21, h:int=10, hColor:int=10, region_size:int=40, ruler:int=30,
                   k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100, sigma:float=0.5,
@@ -334,6 +344,7 @@ def segment_image(image_path:str="", method:str="", edge_th:int=60, bilateral_d:
 
     return result_image
 
+# fills selected segments with color
 def fill(result_image, segmented_image, painted_pixels, click_row:int, click_column:int, color, verbose:int=0):
     """fills segment that selected pixel belongs in result image according to segmented_image and painted_pixels
 
@@ -363,6 +374,7 @@ def fill(result_image, segmented_image, painted_pixels, click_row:int, click_col
     # mark as painted
     painted_pixels[selected_segment==1] = 1
 
+# unfills selected segment
 def unfill(result_image, painted_pixels, raw_image:int, click_row:int, click_column, verbose:int=0):
     """unfills segment that selected pixel belongs in result image according to segmented_image and painted_pixels
 
@@ -388,6 +400,7 @@ def unfill(result_image, painted_pixels, raw_image:int, click_row:int, click_col
     # mark as not painted
     painted_pixels[selected_segment==1] = 0
 
+# places templates and corresponding paints
 def put_template_segments(raw_image, result_image, painted_pixels, temp_att_seg_mask:list, threshold:float=None, verbose:int=0):
     """automatically segments given templates
 
@@ -425,6 +438,7 @@ def put_template_segments(raw_image, result_image, painted_pixels, temp_att_seg_
             np.putmask(result_image, mask=scaled_segment_mask, values=scaled_segment)
             np.putmask(painted_pixels, mask=painted_pixel_mask, values=np.ones_like(painted_pixels))
 
+# prints verboses in a format
 def print_verbose(verbose_type, message:str, verbose:int=0):
     """Prints verbose messages
 

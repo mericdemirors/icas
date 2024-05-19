@@ -12,13 +12,13 @@ from helper_exceptions import *
 
 lock = Lock()
 
-class Segmentating:
+class Segmentator:
     def __init__(self:str, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),
                  method:str="", templates_path="", attentions_path="", segments_path="", masks_path="", thread_range:int=10, template_threshold:float=None,
                  edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100, templateWindowSize:int=7, searchWindowSize:int=21,
                  h:int=10, hColor:int=10, region_size:int=40, ruler:int=30, k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100,
                  sigma:float=0.5, min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, SAMSegmentator=None, verbose:int=0):
-        """initializing segmenting object
+        """initializing Segmentator object
 
         Args:
             image_folder (str): path to images
@@ -110,6 +110,7 @@ class Segmentating:
         attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
         return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
 
+    # checks arguman validity
     def arguman_check(self, templates:list, attentions:list, segments:list, masks:list, verbose:int=0):
         """checks validity of object initialization parameters
 
@@ -133,6 +134,7 @@ class Segmentating:
         if self.color_picker_image is None:
             raise(ColorPickerException("No color_picker_image loaded"))
 
+    # empties the Segmentator attributes
     def empty_images(self):
         """empties object image attributes
         """
@@ -146,6 +148,7 @@ class Segmentating:
         self.orig_painted_pixels = None
         cv2.destroyAllWindows()
     
+    # resets the Segmentator attributes
     def reset_images(self):
         """resets object image attributes to originals
         """
@@ -154,6 +157,7 @@ class Segmentating:
         self.segmented_image = self.orig_segmented_image.copy()
         self.painted_pixels = self.orig_painted_pixels.copy()
     
+    # sets the Segmentator image attributes
     def set_images(self, raw_image, orig_segmented_image):
         """sets object image attributes to given images
 
@@ -175,6 +179,7 @@ class Segmentating:
             self.orig_painted_pixels = np.zeros(self.segmented_image.shape)
         cv2.destroyAllWindows()
 
+    # refreshs image displays
     def display_images(self, file_no:int):
         """refresh the image displays only if a change happend
 
@@ -188,6 +193,7 @@ class Segmentating:
                 cv2.imshow("Painter Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
             self.refresh_images = False
 
+    # listens for user input
     def click_event_listener(self, event, x:int, y:int, flags, callback_info:dict):
         """detects mouse inputs and manages information dictionary
 
@@ -243,6 +249,7 @@ class Segmentating:
                 callback_info["first_cut"] = callback_info["second_cut"]
                 callback_info["second_cut"] = (x, y)
 
+    # listens for user input
     def color_event_listener(self, event, x:int, y:int, flags, color_info:dict):
         """detects mouse inputs and manages information dictionary
 
@@ -259,6 +266,7 @@ class Segmentating:
             color_info['y'] = y
             color_info['clicked'] = True
 
+    # listens for user input
     def display_color_picker(self, callback_info:dict, color_info:dict):
         """imshows color picker image and extra informations for user
 
@@ -285,6 +293,7 @@ class Segmentating:
 
         cv2.imshow("Color Picker", color_picker_image_display)
 
+    # creates new thread to process the upcoming images
     def create_thread(self, file_no:int, verbose:int=0):
         """function to start thread processing and return thread
 
@@ -331,6 +340,7 @@ class Segmentating:
         thread.start()
         return thread
 
+    # saves masks according to paint color
     def save_masks(self, mask_path:str, result_image, painted_pixels, verbose:int=0):
         """saves each segment mask individualy
 
@@ -350,6 +360,7 @@ class Segmentating:
                 mask[painted_pixels == 0] = [0,0,0]
                 cv2.imwrite(mask_path + "(R:{},G:{},B:{})".format(color[2], color[1], color[0]) + ".png", mask)
 
+    # processes keyboard input
     def process_keyboard_input(self, file_no:int, ctrl_z_stack:list, key, verbose:int=0):
         """processes keyboard inputs
 
@@ -393,6 +404,7 @@ class Segmentating:
         elif key == ord('t'): # template match
             return "template"
 
+    # processes color picker window input
     def process_color_picker_input(self, color_info:dict, previous_color):
         """selects color
 
@@ -412,6 +424,7 @@ class Segmentating:
         else:
             return previous_color
 
+    # takes action according to user input
     def take_action(self, ctrl_z_stack:list, color, callback_info:dict, action_type:str=""):
         """processes taken action
 
@@ -463,6 +476,7 @@ class Segmentating:
             self.refresh_images = True
             ctrl_z_stack.append((previous_result_image.copy(), previous_segmented_image.copy(), previous_painted_pixels.copy()))
 
+    # image segmenting
     def manual_segmenting(self, file_no:int, verbose:int=0):
         """segments given image and saves it to output folder
 
@@ -502,6 +516,7 @@ class Segmentating:
             self.take_action(ctrl_z_stack, color, callback_info, action_type=action)
             self.display_images(file_no)
 
+    # function to capsulate other function
     def process(self, verbose:int=0):
         """function to segment images in a folder in order and save them to output folder
         
@@ -542,6 +557,7 @@ class Segmentating:
         self.thread_stop = True
         cv2.destroyAllWindows()
 
+    # function to capsulate other function using grabcut
     def grabcut_process(self, verbose:int=0):
         """seperated process function for grabcut method since interactive grabcut segmentation doesn't require threads
 
@@ -569,6 +585,7 @@ class Segmentating:
                 
         cv2.destroyAllWindows()
 
+    # function to capsulate other function using SAM
     def SAM_process(self, verbose:int=0):
         """seperated process function for SAM method since interactive SAM segmentation doesn't require threads
 
@@ -596,6 +613,7 @@ class Segmentating:
                 
         cv2.destroyAllWindows()
 
+    # # function to capsulate process for exception handling
     def __call__(self):
         """calling the object will start the main process and catch any possible exception during process
         """

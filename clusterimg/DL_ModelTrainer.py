@@ -48,6 +48,7 @@ class ModelTrainer():
             # else copy the given serial number
             self.model_serial_path = os.path.abspath(os.path.split(self.ckpt_path)[0])
 
+    # creates loss function
     def get_criterion(self, loss_type: str="mse", model=None):
         """function to set loss function
 
@@ -88,6 +89,7 @@ class ModelTrainer():
             raise(InvalidLossException("Invalid loss type: " + loss_type))
         return loss
 
+    # trains model on whole dataset
     def train(self):
         """trains model with dataset
         """
@@ -131,6 +133,7 @@ class ModelTrainer():
         self.model.load_state_dict(torch.load(os.path.join(self.model_serial_path, save_name)))
         self.ckpt_path = os.path.join(self.model_serial_path, save_name)
 
+    # gets latent representations of images from start to end index
     def get_features(self, start: int, end: int):
         """function to get image features
 

@@ -12,11 +12,11 @@ from helper_functions import cluster, similarity_methods, calculate_similarity, 
 from helper_exceptions import *
 from global_variables import GLOBAL_THREADS, GLOBAL_THRESHOLD
 
-class Clustering():
+class Clusteror():
     def __init__(self, images_folder_path: str, method: str, batch_size: int, threshold: float=None,
                  num_of_threads: int=2, size: tuple=(0, 0), scale: tuple=(1.0, 1.0), option: str="",
                  transfer: str="copy", overwrite: bool=False, chunk_time_threshold: int=60, verbose: int=0):
-        """initializing clustering object
+        """initializing Clusteror object
 
         Args:
             images_folder_path (str): folder path of images
@@ -70,6 +70,7 @@ class Clustering():
         attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
         return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
 
+    # checks arguman validity
     def arguman_check(self, verbose: int=0):
         """checks validity of object initialization parameters
 

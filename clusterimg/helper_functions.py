@@ -74,6 +74,7 @@ def cluster(sorted_similarities: list, clustering_threshold: float, verbose: int
 
     return clusters, clustered_images
 
+# encapsulates similarity methods
 def similarity_methods(method: str, images: dict, image1_file: str, image2_file: str, verbose: int=0):
     """similarity calculation between 2 image for each method
 
@@ -448,8 +449,6 @@ def read_and_resize(path: str, size:tuple=(0,0), scale:tuple=(1.0, 1.0), gray=Tr
         image = cv2.resize(image, dsize=size)
 
     return image
-
-
 
 # generates test dataset
 def generate_test_dataset(path:str, count:int, size:int=256, x:int=40, y:int=220, rand_RGB_value:int=0, rand_xy_value:int=5, font_scale:int=9, font_thickness:int=45):

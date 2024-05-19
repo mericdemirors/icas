@@ -10,8 +10,17 @@ TO-TRY
 
 TO-ADD
 - documentation
+Clusteror
+DL_Clusteror
+DL_Datasets
+DL_Models
+DL_ModelTrainer
+GrabcutSegment
+SAMSegmentator
+Segmentator
 
 TO-TIDY
 - requirement check
 
 TO-FIX
+- make all objects callable

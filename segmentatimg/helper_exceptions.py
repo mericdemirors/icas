@@ -41,7 +41,7 @@ class InvalidMethodException(Exception):
     def __str__(self):
         return("Custom exception to signal for notifying caller object that an invalid segmentation method is selected")
 
-class GrabcutSegmentorQuitException(Exception):
+class GrabcutSegmentatorQuitException(Exception):
     def __init__(self, message:str):
         self.message = message
         self.error_code = 700

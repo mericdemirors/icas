@@ -5,9 +5,9 @@ from skimage.morphology import flood_fill
 
 from helper_exceptions import *
 
-class GrabcutSegmentor():
+class GrabcutSegmentator():
     def __init__(self):
-        """initializing GrabcutSegmentor object
+        """initializing GrabcutSegmentator object
         """
         self.DRAW_BG = {"color" : [0,0,0], "val" : 0} # right click
         self.DRAW_FG = {"color" : [255,255,255], "val" : 1} # left click
@@ -15,8 +15,9 @@ class GrabcutSegmentor():
         self.DRAW_PR_FG = {"color" : [200,200,200], "val" : 3} # ctrl + left click
         self.reset()
 
+    # resets GrabcutSegmentator attributes
     def reset(self):
-        """resetting GrabcutSegmentor object variables
+        """resetting GrabcutSegmentator object variables
         """
         self.paint_dict = None
         self.thickness = 3
@@ -27,6 +28,7 @@ class GrabcutSegmentor():
         self.currently_drawing_rect = False  # flag for rectangle action
         self.rect_or_mask = -1               # flag for selecting rect or mask mode
 
+    # listens for user inputs
     def annotation_event_listener(self, event, x:int, y:int, flags, param):
         """mouse callbacks for annotation types
 
@@ -82,6 +84,7 @@ class GrabcutSegmentor():
             self.image = self.altered.copy()
             cv2.circle(self.mask, (x,y), self.thickness, self.paint_dict["val"], -1)
 
+    # updates brush thickness
     def on_trackbar_change(self, value:int):
         """function to update brush thickness with window trackbar
 
@@ -89,7 +92,8 @@ class GrabcutSegmentor():
             value (int): new thickness value
         """
         self.thickness = value
-   
+
+    # labels the segments and returns
     def get_segments(self):
         """generate labeled segments from grabcut segmented image
 
@@ -130,6 +134,7 @@ class GrabcutSegmentor():
         last_id = label_the_segments(segments, segment_value=-1, start_id=last_id)
         return segments
 
+    # interactive segmenting
     def segment(self, file_path:str):
         """function to interactively segment with grabcut
 
@@ -161,7 +166,7 @@ class GrabcutSegmentor():
             if key == ord("q"):
                 cv2.destroyWindow("Segments(press 'space' to refine segmentation)")
                 cv2.destroyWindow("annotation")
-                raise(GrabcutSegmentorQuitException("GrabcutSegmentor received key q for quitting"))
+                raise(GrabcutSegmentatorQuitException("GrabcutSegmentator received key q for quitting"))
             if key == ord("f"):
                 cv2.destroyWindow("Segments(press 'space' to refine segmentation)")
                 cv2.destroyWindow("Annotations")

@@ -20,6 +20,7 @@ class SAMSegmentator():
         self.DRAW_FG = {"color" : [0,255,0], "val" : 1} # left click
         self.reset()
 
+    # resets SAMSegmentator attributes
     def reset(self, verbose=0):
         """resetting SAMSegmentator object variables
         """
@@ -31,6 +32,7 @@ class SAMSegmentator():
         self.prompt_coords = []             # selected coords for prompting
         self.prompt_labels = []             # selected labels for prompting
 
+    # listens for user input
     def annotation_event_listener(self, event, x:int, y:int, flags, param, verbose=0):
         """mouse callbacks for annotation types
 
@@ -80,6 +82,7 @@ class SAMSegmentator():
             self.prompt_labels.append(self.paint_dict["val"])
             self.image = self.altered.copy()
    
+    # generated prompt with user input for prompted mask prediction
     def generate_prompt(self, image, verbose=0):
         """function to interactively generate SAM prompt
 
@@ -112,6 +115,7 @@ class SAMSegmentator():
                 self.reset()
                 self.image = self.altered = self.original.copy()
 
+    # labels the image segments
     def label_the_segments(self, image, segment_value:int, start_id:int=1):
         """labels the seperate segments with ids
 
@@ -137,6 +141,7 @@ class SAMSegmentator():
             segment_pixels = np.where(image == segment_value)
         return segment_id
 
+    # labels the auto predictor sam output mask
     def get_label_from_SAM_auto_output(self, SAM_auto_output, verbose=0):
         """creates labeled image from SAM output
 
@@ -157,6 +162,7 @@ class SAMSegmentator():
 
         return labeled_image
     
+    # labels the prompted predicted masks
     def get_label_from_SAM_with_prompt_output_mask(self, SAM_with_prompt_output_mask, verbose=0):
         """creates labeled image from SAM output
 
@@ -177,6 +183,7 @@ class SAMSegmentator():
 
         return labeled_image
 
+    # segments the images
     def segment(self, image_path, verbose=0):
         """segmentation using SAM model
 

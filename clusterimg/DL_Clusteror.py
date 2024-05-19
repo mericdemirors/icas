@@ -13,12 +13,12 @@ import torch
 from helper_exceptions import *
 from helper_functions import write_clusters, print_verbose, image_transfer
 
-class DL_Clustering():
+class DL_Clusteror():
     def __init__(self, model_trainer, method: str, batch_size:int, number_of_clusters: list=[10], max_iter: list=[200],
                  DBSCAN_eps: list=[0.5], DBSCAN_min_samples: list=[5], HDBSCAN_min_cluster_size: list=[5],
                  HDBSCAN_max_cluster_size: list=[None], option: str="", transfer: str="copy",
                  overwrite: bool=False, verbose: int=0):
-        """creates deep learning clustering object
+        """creates DL_Clusteror object
 
         Args:
             model_trainer (ModelTrainer): object to hold and manage deep learning model and dataset
@@ -70,6 +70,7 @@ class DL_Clustering():
         attr_strings = [f"{key}: {value}" for key, value in attributes.items()]
         return "-"*70 + "\n" + "\n".join(attr_strings) + "\n" + "-"*70
 
+    # checks arguman validity
     def arguman_check(self, verbose: int=0):
         """checks arguman validity
 
@@ -87,6 +88,7 @@ class DL_Clustering():
         if self.transfer not in valid_transfer:
             raise(InvalidTransferException("Invalid transfer: " + self.transfer))
 
+    # get clustering models
     def get_models(self, verbose: int=0):
         """creates different models for parameter grid search
 
@@ -132,6 +134,7 @@ class DL_Clustering():
 
         return models
 
+    # finds best clustering model with parameter grid search
     def find_best_model(self, models: list, image_embeds, verbose: int=0):
         """finds best model in grid search by clustering evaluations
 
@@ -166,6 +169,7 @@ class DL_Clustering():
         
         return best_model
     
+    # calculates clusters from passed batch images
     def calculate_batch_clusters(self, start: int, end: int, verbose: int=0):
         """calculates the clusters in a batch
 
@@ -187,6 +191,7 @@ class DL_Clustering():
         clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
         return clusters
 
+    # calculates clusters from selected template images
     def calculate_template_clusters(self, template_paths: list, verbose: int=0):
         """calculates clusters of templates
 
@@ -218,6 +223,7 @@ class DL_Clustering():
         clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
         return clusters
 
+    # merges clustered templates
     def merge_clusters_by_templates(self, batch_folder_paths: list, verbose: int=0):
         """merges individual clusters in all batch folders into one result folder
 
@@ -268,6 +274,7 @@ class DL_Clustering():
 
         return template_cluster_folders_to_merge_list
 
+    # function to pack all things above into one call
     def create_clusters(self, batch_idx: int, start: int, end: int, verbose: int=0):
         """creates clusters of a batch of images
 
@@ -283,6 +290,7 @@ class DL_Clustering():
         if verbose > 0:
             print("-"*70)
 
+    # full process in one function
     def process(self, verbose: int=0):
         """function to encapsulate all pipeline in one function
 
@@ -351,6 +359,7 @@ class DL_Clustering():
                 if os.path.isfile(os.path.join(self.result_container_folder, folder)):
                     os.remove(os.path.join(self.result_container_folder, folder))
 
+    # call method to capsulate process function and custom exceptions
     def __call__(self):
         """calling the object will start the main process
 
