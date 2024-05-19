@@ -257,10 +257,24 @@ def grabcut_segmentation(image_path:str, verbose:int=0):
     labels = gb.segment(image_path)
     return labels
 
+def SAM_segmentation(image_path:str, SAMSegmentator, verbose:int=0):
+    """segmenting image with SAM segmentation 
+
+    Args:
+        image_path (str): path to image to segment
+        verbose (int, optional): verbose level. Defaults to 0.
+
+    Returns:
+        numpy.ndarray: segmented image
+    """
+    labels = SAMSegmentator.segment(image_path)
+    return labels
+
+
 def segment_image(image_path:str="", method:str="", edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100,
                   templateWindowSize:int=7, searchWindowSize:int=21, h:int=10, hColor:int=10, region_size:int=40, ruler:int=30,
                   k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100, sigma:float=0.5,
-                  min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, verbose:int=0):
+                  min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, SAMSegmentator=None, verbose:int=0):
     """segments image with selected segmentation process. Multiple same/similar meaning carrying parameters
     has used to create a clear distinction between different segmentation techniques. Further inforamtion could
     be obtained from directly each techniques descrtion.
@@ -309,6 +323,9 @@ def segment_image(image_path:str="", method:str="", edge_th:int=60, bilateral_d:
         result_image = graph_segmentation(image_path, k, min_segment_size, sigma, verbose=verbose-1)
     elif method == "grabcut":
         result_image = grabcut_segmentation(image_path, verbose=verbose-1)
+    elif method == "SAM":
+        result_image = SAM_segmentation(image_path, SAMSegmentator, verbose=verbose-1)
+
     # Below methods are not implemented because they are not suited for multiclass image segmentation tasks
     # But they could be use for singleclass similar object detection tasks
     # watershed

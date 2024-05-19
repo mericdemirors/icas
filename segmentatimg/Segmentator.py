@@ -17,7 +17,7 @@ class Segmentating:
                  method:str="", templates_path="", attentions_path="", segments_path="", masks_path="", thread_range:int=10, template_threshold:float=None,
                  edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100, templateWindowSize:int=7, searchWindowSize:int=21,
                  h:int=10, hColor:int=10, region_size:int=40, ruler:int=30, k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100,
-                 sigma:float=0.5, min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, verbose:int=0):
+                 sigma:float=0.5, min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, SAMSegmentator=None, verbose:int=0):
         """initializing segmenting object
 
         Args:
@@ -49,6 +49,7 @@ class Segmentating:
             min_segment_size (int): min size of a segment for felzenszwalb or graph. Defaults to 100.
             segment_size (int): size of segments for felzenszwalb, quickshift or graph. Defaults to 100.
             color_weight (float): weight of color to space in quickshift. Defaults to 0.5.
+            SAMSegmentator (SAMSegmentator): SAMSegmentator object for SAM method. Defaults to None.
             verbose (int, optional): verbose level. Defaults to 0.
         """
         self.image_folder = os.path.abspath(image_folder)
@@ -96,7 +97,7 @@ class Segmentating:
 
         self.segment_image_parameters = locals()
         self.segment_image_parameters = {k: v for k, v in self.segment_image_parameters.items() if k in inspect.signature(segment_image).parameters}
-
+        self.SAMSegmentator = SAMSegmentator
 
     def __str__(self):
         """casting to string method for printing/debugging object attributes
@@ -123,7 +124,7 @@ class Segmentating:
         if len(attentions) != len(masks):
             raise(NotMatchingAttentionAndMasksException("length of attentions("+str(len(attentions))+") and masks("+str(len(masks))+") are not matching"))
 
-        valid_methods = ["edge", "superpixel", "kmeans", "slickmeans", "chanvase", "felzenszwalb", "quickshift", "graph", "grabcut"]
+        valid_methods = ["edge", "superpixel", "kmeans", "slickmeans", "chanvase", "felzenszwalb", "quickshift", "graph", "grabcut", "SAM"]
         if self.method not in valid_methods:
             raise(InvalidMethodException("Invalid method: " + self.method))
         
@@ -319,7 +320,7 @@ class Segmentating:
                     lock.acquire()
                     if self.segmented_image_dict[image_path] is None: 
                         raw_image = cv2.imread(image_path)
-                        segmented_image = segment_image(image_path, **self.segment_image_parameters)
+                        segmented_image = segment_image(image_path=image_path, **self.segment_image_parameters)
                         self.segmented_image_dict[image_path] = (raw_image, segmented_image)
                     lock.release()
             except Exception as e:
@@ -539,7 +540,7 @@ class Segmentating:
         cv2.destroyAllWindows()
 
     def grabcut_process(self, verbose:int=0):
-        """seperated process function for grabcut method since interactive grabcut segmentationis doen require threads
+        """seperated process function for grabcut method since interactive grabcut segmentation doesn't require threads
 
         Args:
             verbose (int, optional): verbose level. Defaults to 0.
@@ -549,7 +550,34 @@ class Segmentating:
             image_path = self.files[file_no]
 
             raw_image = cv2.imread(image_path)
-            orig_segmented_image = segment_image(self.method, image_path)
+            orig_segmented_image = segment_image(method=self.method, image_path=image_path)
+            self.segmented_image_dict[image_path] = raw_image, orig_segmented_image
+
+            self.empty_images()
+            self.set_images(raw_image, orig_segmented_image)
+            return_code = self.manual_segmenting(file_no, verbose=verbose-1)
+            
+            if return_code == "next" or return_code == "save": # n or s
+                file_no = (file_no + 1)%len(self.files)
+            elif return_code == "previous": # p
+                file_no = (file_no - 1)%len(self.files)
+            elif return_code == "quit": # q
+                break
+                
+        cv2.destroyAllWindows()
+
+    def SAM_process(self, verbose:int=0):
+        """seperated process function for SAM method since interactive SAM segmentation doesn't require threads
+
+        Args:
+            verbose (int, optional): verbose level. Defaults to 0.
+        """
+        file_no = 0
+        while 0 <= file_no < len(self.files):
+            image_path = self.files[file_no]
+
+            raw_image = cv2.imread(image_path)
+            orig_segmented_image = segment_image(method=self.method, image_path=image_path, SAMSegmentator=self.SAMSegmentator)
             self.segmented_image_dict[image_path] = raw_image, orig_segmented_image
 
             self.empty_images()
@@ -572,6 +600,8 @@ class Segmentating:
             os.makedirs(self.save_folder, exist_ok=True)
             if self.method == "grabcut":
                 self.grabcut_process(self.verbose-1)
+            if self.method == "SAM":
+                self.SAM_process(self.verbose-1)
             else:
                 self.process(verbose=self.verbose-1)
         except Exception as custom_e:
