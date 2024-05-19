@@ -3,7 +3,6 @@
 Tool for segmentating images
 
 TO-ADD
-- LICENCE for SAM
 
 TO-TRY
 

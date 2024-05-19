@@ -9,7 +9,9 @@ TO-DO
 TO-TRY
 
 TO-ADD
+- LICENCE for SAM
 
 TO-TIDY
+- requirements
 
 TO-FIX
