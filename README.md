@@ -23,4 +23,3 @@ TO-TIDY
 - write READMEs
 
 TO-FIX
-- make all objects callable

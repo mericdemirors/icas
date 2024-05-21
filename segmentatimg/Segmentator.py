@@ -613,7 +613,6 @@ class Segmentator:
                 
         cv2.destroyAllWindows()
 
-    # # function to capsulate process for exception handling
     def __call__(self):
         """calling the object will start the main process and catch any possible exception during process
         """

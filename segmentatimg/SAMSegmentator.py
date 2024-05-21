@@ -184,7 +184,7 @@ class SAMSegmentator():
         return labeled_image
 
     # segments the images
-    def segment(self, image_path, verbose=0):
+    def segment(self, image_path:str, verbose: int=0):
         """segmentation using SAM model
 
         Args:
@@ -232,3 +232,6 @@ class SAMSegmentator():
             SAM_segment = self.get_label_from_SAM_auto_output(SAM_auto_output)
         
         return SAM_segment
+    
+    def __call__(self, image_path:str):
+        return self.segment(image_path, verbose=self.verbose-1)

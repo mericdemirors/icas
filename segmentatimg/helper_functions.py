@@ -264,7 +264,7 @@ def grabcut_segmentation(image_path:str, verbose:int=0):
         numpy.ndarray: segmented image
     """
     gb = GrabcutSegmentator()
-    labels = gb.segment(image_path)
+    labels = gb(image_path)
     return labels
 
 # SAM segmentation
@@ -278,7 +278,7 @@ def SAM_segmentation(image_path:str, SAMSegmentator, verbose:int=0):
     Returns:
         numpy.ndarray: segmented image
     """
-    labels = SAMSegmentator.segment(image_path)
+    labels = SAMSegmentator(image_path)
     return labels
 
 # capsulates all segmentation techniques in one function

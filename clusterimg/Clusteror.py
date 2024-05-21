@@ -443,7 +443,6 @@ class Clusteror():
                 if os.path.isfile(os.path.join(self.result_container_folder, folder)):
                     os.remove(os.path.join(self.result_container_folder, folder))
 
-    # call method to capsulate process function and custom exceptions
     def __call__(self):
         """calling the object will start the main process
         """

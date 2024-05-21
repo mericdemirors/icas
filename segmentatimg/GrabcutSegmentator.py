@@ -198,3 +198,6 @@ class GrabcutSegmentator():
             foreground = np.where((self.mask==1) + (self.mask==3), 255, 0).astype(np.uint8)
             self.display = self.original.copy()
             self.display[foreground == 0] = 0
+
+    def __call__(self, file_path):
+        return self.segment(file_path)
