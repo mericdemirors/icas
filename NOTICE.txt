@@ -7,17 +7,18 @@ This project includes software developed by the following open source projects:
 
 This project also makes use of the following third-party libraries:
 
-1. numpy
-2. opencv
-3. skimage
-4. tqdm
-5. matplotlib
-6. mplcursors
-7. datasketch
-8. PIL (Pillow)
-9. imagehash
-10. torch (PyTorch)
-11. torchvision
-12. segment anything
+1. numpy>=1.26.4
+2. opencv_contrib_python>=4.9.0.80
+3. scikit-image>=0.22.0
+4. tqdm>=4.66.2
+5. matplotlib>=3.8.4
+6. mplcursors>=0.5.3
+7. datasketch>=1.6.4
+8. Pillow>=10.3.0
+9. ImageHash>=4.3.1
+10. torch>=2.3.0
+11. scikit-learn>=1.4.2
+12. torchvision>=0.18.0
+13. segment-anything>=1.0
 
 See the LICENCE folder for the full of these licenses.

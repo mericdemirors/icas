@@ -20,7 +20,7 @@ SAMSegmentator
 Segmentator
 
 TO-TIDY
-- requirement check
+- write READMEs
 
 TO-FIX
 - make all objects callable
