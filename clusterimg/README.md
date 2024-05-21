@@ -1,13 +1,4 @@
 # Clusterimg
 ---
-Tool for clustering mixed images
-
-TO-ADD
-- openmp
-- C/C++/CUDA optimization
-
-TO-TRY
-
-TO-TIDY
-
-TO-FIX
+Tool for clustering mixed images.
+Further possible optimizations: openmp, C/C++, CUDA optimizations

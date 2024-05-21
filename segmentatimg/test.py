@@ -5,7 +5,7 @@ from SAMSegmentator import SAMSegmentator
 sam_config = sam_model_registry["vit_b"](checkpoint="/home/mericdemirors/Downloads/sam_vit_b_01ec64.pth").to("cpu")
 sam_with_prompt = SamPredictor(sam_config)
 sam_auto = SamAutomaticMaskGenerator(sam_config)
-SAM_segmentator = SAMSegmentator(sam_with_prompt, "cpu")
+SAM_segmentator = SAMSegmentator(sam_auto, "cpu")
 
 sgmt = Segmentator(image_folder="/home/mericdemirors/Pictures/titles", 
                     method="SAM", template_threshold=0.1, SAMSegmentator=SAM_segmentator,

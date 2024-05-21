@@ -16,6 +16,7 @@ class SAMSegmentator():
         self.SAM = SAM
         self.device = device
         self.SAM_setted_image = None
+        self.verbose = verbose
         self.DRAW_BG = {"color" : [0,0,255], "val" : 0} # right click
         self.DRAW_FG = {"color" : [0,255,0], "val" : 1} # left click
         self.reset()

@@ -190,7 +190,7 @@ class Segmentator:
             cv2.imshow("Processed Image " + str(file_no), self.result_image)
             if cv2.getWindowProperty("Segmented Image(Debug)", cv2.WND_PROP_VISIBLE) > 0:
                 cv2.imshow("Segmented Image(Debug)", (self.segmented_image).astype(np.uint8))
-                cv2.imshow("Painter Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
+                cv2.imshow("Painted Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
             self.refresh_images = False
 
     # listens for user input
@@ -397,10 +397,10 @@ class Segmentator:
         elif key == ord('d'): # debug
             if cv2.getWindowProperty("Segmented Image(Debug)", cv2.WND_PROP_VISIBLE) > 0:
                 cv2.destroyWindow("Segmented Image(Debug)")
-                cv2.destroyWindow("Painter Pixels(Debug)")
+                cv2.destroyWindow("Painted Pixels(Debug)")
             else:
                 cv2.imshow("Segmented Image(Debug)", (self.segmented_image).astype(np.uint8))
-                cv2.imshow("Painter Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
+                cv2.imshow("Painted Pixels(Debug)", (self.painted_pixels*255).astype(np.uint8))
         elif key == ord('t'): # template match
             return "template"
 

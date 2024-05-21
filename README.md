@@ -18,8 +18,9 @@ DL_ModelTrainer
 GrabcutSegment
 SAMSegmentator
 Segmentator
+- segmentator preview images
 
 TO-TIDY
-- write READMEs
+- write READMEs with links and images
 
 TO-FIX
