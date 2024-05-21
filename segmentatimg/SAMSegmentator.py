@@ -139,7 +139,7 @@ class SAMSegmentator():
 
             segment_id = segment_id + 1
             segment_pixels = np.where(image == segment_value)
-        return segment_id
+        return image
 
     # labels the auto predictor sam output mask
     def get_label_from_SAM_auto_output(self, SAM_auto_output, verbose=0):

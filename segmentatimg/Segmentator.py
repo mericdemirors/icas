@@ -621,7 +621,7 @@ class Segmentator:
             os.makedirs(self.save_folder, exist_ok=True)
             if self.method == "grabcut":
                 self.grabcut_process(self.verbose-1)
-            if self.method == "SAM":
+            elif self.method == "SAM":
                 self.SAM_process(self.verbose-1)
             else:
                 self.process(verbose=self.verbose-1)
