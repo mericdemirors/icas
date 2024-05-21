@@ -13,7 +13,7 @@ from helper_functions import print_verbose
 from helper_exceptions import *
 
 class ModelTrainer():
-    def __init__(self, num_of_epochs: int, lr: float, batch_size: int, loss_type: str, dataset, model, ckpt_path: str=None, verbose: int=0):
+    def __init__(self, num_of_epochs: int, lr: float, batch_size: int, loss_type: str, dataset, model, device: str="cpu", ckpt_path: str=None, verbose: int=0):
         """class to capsulate pytorch model and dataset
 
         Args:
@@ -23,9 +23,10 @@ class ModelTrainer():
             loss_type (str): loss function type to pass to get_criterion()
             dataset (pytorch dataset): pytorch dataset
             model (pytorch model): pytorch model
+            device (str. optional): device to train on. Default is cpu
             ckpt_path (str, optional): path to load model checkpoint, None means model is not trained. Defaults to None.
         """
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device
         self.num_of_epochs = num_of_epochs
         self.lr = lr
         self.batch_size = batch_size
@@ -67,7 +68,7 @@ class ModelTrainer():
             if model is None:
                 model = models.vgg19(pretrained=True)
             
-            model = model.eval()
+            model = model.eval().to(self.device)
 
             def perceptual_loss(x, y, model=model):
                 """perceptual loss function, calculates mean absolute difference between 

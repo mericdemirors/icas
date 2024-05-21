@@ -312,7 +312,7 @@ class DL_Clusteror():
 
         if self.option != "merge":
             for batch_idx, start in tqdm(enumerate(range(0, len(self.model_trainer.dataset), self.batch_size)), desc="Creating clusters", leave=False):
-                self.create_clusters(batch_idx, start, start + self.batch_size, verbose=self.verbose-1)
+                self.create_clusters(batch_idx, start, min(len(self.model_trainer.dataset), start + self.batch_size), verbose=self.verbose-1)
 
             # if images are done in one batch terminate the code after organizing result folders
             if self.batch_size >= len(self.model_trainer.dataset):
