@@ -44,7 +44,7 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
     ![generated mask](images/SAM/mask.png)  
 
 ## 2- Two window is showed to user, one for color selecting other for painting segments.  
-* Color selecting window is used for selecting the segmentation color and displaying the painting mode. There are 2 paint modes other than default clicking actions. One is for continuously filling and other is unfilling. Both of them are activated and deactivated with double click on related mouse button.  
+* Color selecting window is used for selecting the segmentation color and displaying the painting mode. There are two paint modes other than default clicking actions. One is for continuously filling and other is unfilling. Both of them are activated and deactivated with double click on related mouse button.  
   Sample image "jet1.jpg":  
   ![Sample image "jet1.jpg"](images/jet1.jpg)  
   Segments for "jet1.jpg" using superpixel(selected method and its parameters should be selected for better segments, this is only for explanatory purposes[black lines around red painted area are edge annotations, originally not included in segments]):  
@@ -62,7 +62,7 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
   * z: reverses the last action  
   * r: resets the segmentation  
   * d: displays the image segmentation and painted pixels for debug purposes  
-  * t: applies template painting. Painting is done with 4 base image type template, attention(optional), segment and mask(optional). Attention and mask images can generated from template and segment images if not provided.  
+  * t: applies template painting. Painting is done with four base image type template, attention(optional), segment and mask(optional). Attention and mask images can generated from template and segment images if not provided.  
     * template: template to look for a match in image  
     * attention: masks that indicates which parts of the templates are considered while looking for a match  
     * segment: paint to put over found match  
