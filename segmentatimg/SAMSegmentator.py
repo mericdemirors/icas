@@ -24,6 +24,9 @@ class SAMSegmentator():
     # resets SAMSegmentator attributes
     def reset(self, verbose=0):
         """resetting SAMSegmentator object variables
+
+        Args:
+            verbose (int, optional): verbose level. Defaults to 0.
         """
         self.paint_dict = None
         self.clicked = False                # flag for drawing action
@@ -43,6 +46,7 @@ class SAMSegmentator():
             y (int): row coordinate of mouse
             flags (opencv flags): flags
             param (dictionary): parameters
+            verbose (int, optional): verbose level. Defaults to 0.
         """
         # box selection with middle button
         if event == cv2.EVENT_MBUTTONDOWN:
@@ -83,7 +87,7 @@ class SAMSegmentator():
             self.image = self.altered.copy()
     
     # draws annotations on image
-    def draw_annotations(self, box_x:int=None, box_y:int=None, click_x:int=None, click_y:int=None):
+    def draw_annotations(self, box_x:int=None, box_y:int=None, click_x:int=None, click_y:int=None, verbose: int=0):
         """draws currently active annotations
 
         Args:
@@ -95,6 +99,7 @@ class SAMSegmentator():
             None means no point annotation is provided when it is called Defaults to None.
             click_y (int, optional): y coords input for new point annotation,
             None means no point annotation is provided when it is called Defaults to None.
+            verbose (int, optional): verbose level. Defaults to 0.
         """
         # if there is a new annotation
         for r in self.prompt_boxes:
@@ -113,7 +118,7 @@ class SAMSegmentator():
             cv2.circle(self.altered, (click_x,click_y), 3, self.paint_dict["color"], -1)
 
     # calculates binary mask from prompt predicted masks
-    def get_mask_from_prompt(self, image, prompt_boxes, prompt_coords, prompt_labels):
+    def get_mask_from_prompt(self, image, prompt_boxes: list, prompt_coords: list, prompt_labels: list, verbose:int=0):
         """creates binary mask with given prompt
 
         Args:
@@ -121,6 +126,7 @@ class SAMSegmentator():
             prompt_boxes (list): box annotations
             prompt_coords (list): point annotations
             prompt_labels (list): point annotation labels
+            verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
             numpy.ndarray: binary mask
@@ -168,6 +174,7 @@ class SAMSegmentator():
 
         cv2.namedWindow("Annotations", flags= cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.setMouseCallback("Annotations", self.annotation_event_listener)
+        mask = None
         
         while True:
             cv2.imshow("Annotations", self.image)
@@ -185,6 +192,8 @@ class SAMSegmentator():
             if key == ord("f"):
                 cv2.destroyWindow("Annotations")
                 cv2.destroyWindow("Mask")
+                if mask is None:
+                    mask= self.get_mask_from_prompt(self.original, self.prompt_boxes, self.prompt_coords, self.prompt_labels)
                 return mask
             elif key == ord("z"): # reverse last annotation
                 if len(self.ctrl_z_stack) > 0:
