@@ -47,7 +47,7 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
 * Color selecting window is used for selecting the segmentation color and displaying the painting mode. There are 2 paint modes other than default clicking actions. One is for continuously filling and other is unfilling. Both of them are activated and deactivated with double click on related mouse button.  
   Sample image "jet1.jpg":  
   ![Sample image "jet1.jpg"](images/jet1.jpg)  
-  Segments for "jet1.jpg" using superpixel(selected method and its parameters should be selected for better segments, this is only for explanatory purposes):  
+  Segments for "jet1.jpg" using superpixel(selected method and its parameters should be selected for better segments, this is only for explanatory purposes[black lines around red painted area are edge annotations, originally not included in segments]):  
   ![Segments for "jet1.jpg"](images/normal_segmentation/seg.png)  
   Painted image:  
   ![Painted image](images/normal_segmentation/res.png)  
