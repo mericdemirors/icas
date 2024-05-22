@@ -22,8 +22,10 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
   * f: finishes the image segmentation and passes image to interactive painting  
   * r: resets the annotations  
   * space: runs grabcut once(multiple presses are needed for convergence)  
-  ![Annotations of a sample grabcut](images/segmentatimg/grabcut/annots.png)  
-  ![generated mask](images/segmentatimg/grabcut/mask.png)  
+  Annotations of a sample grabcut:  
+  ![Annotations of a sample grabcut](images/grabcut/annots.png)  
+  selected foreground:  
+  ![selected foreground](images/grabcut/mask.png)  
 
 * SAM: [Meta's Segment Anything Model](https://github.com/facebookresearch/segment-anything) is used. Segmentation is done by one of two SAM models: SamAutomaticMaskGenerator(doesnt require any annotation, all processes are automatic) or SamPredictor(prompt must be generated on a window with three annotation types):  
   * Annotations window: displays the current segments of image  
@@ -36,14 +38,21 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
   * space: ends segmenting and passes prompt to prediction function  
   * f: finishes the segmentation and passes image to interactive painting  
   * z: reverses the last annotation  
-    ![Annotations of a sample grabcut](images/segmentatimg/SAM/annots.png)  
-    ![generated mask](images/segmentatimg/SAM/mask.png)  
+    Annotations of a sample SAM:  
+    ![Annotations of a sample SAM](images/SAM/annots.png)  
+    generated mask:  
+    ![generated mask](images/SAM/mask.png)  
 
 ## 2- Two window is showed to user, one for color selecting other for painting segments.  
 * Color selecting window is used for selecting the segmentation color and displaying the painting mode. There are 2 paint modes other than default clicking actions. One is for continuously filling and other is unfilling. Both of them are activated and deactivated with double click on related mouse button.  
+  Sample image "jet1.jpg":  
   ![Sample image "jet1.jpg"](images/jet1.jpg)  
-  ![Painted image](images/segmentatimg/normal_segmentation/res.png)  
-  ![Generated Mask "jet1_mask_(R:204,G:0,B:0).png"](images/segmentatimg/normal_segmentation/jet1_mask_(R:204,G:0,B:0).png)  
+  Segments for "jet1.jpg" using superpixel(selected method and its parameters should be selected for better segments, this is only for explanatory purposes):  
+  ![Segments for "jet1.jpg"](images/normal_segmentation/seg.png)  
+  Painted image:  
+  ![Painted image](images/normal_segmentation/res.png)  
+  Generated Mask "jet1_mask_(R:204,G:0,B:0).png":  
+  ![Generated Mask "jet1_mask_(R:204,G:0,B:0).png"](images/normal_segmentation/jet1_mask_(R:204,G:0,B:0).png)  
 
 * Painting are done in segmenting window. Left click fills the segment and right click unfills, Rapid filling and unfilling can be done with continuous modes. Middle button is used to make a cut, a line is cutted between consecutive middle button clicked points and cutted pixels are assigned to be an edge. Also keyboard inputs are listened for various actions other than painting:  
   * q: quits the segmentation  
@@ -58,7 +67,11 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
     * attention: masks that indicates which parts of the templates are considered while looking for a match  
     * segment: paint to put over found match  
     * mask: indicates which pixels on the segment image will painted on the image  
-      ![Sample template](images/segmentatimg/template/template.png)  
-      ![Sample attention](images/segmentatimg/template/attention.png)  
-      ![Sample segment](images/segmentatimg/template/segment.png)  
-      ![Sample mask](images/segmentatimg/template/mask.png)  
+      Sample template(means we will search for a plane in this pose):  
+      ![Sample template](images/template/template.png)  
+      Sample attention(means that we will ignore the sky and only focus on plane similarity):  
+      ![Sample attention](images/template/attention.png)  
+      Sample segment(means these pixels will be painted):  
+      ![Sample segment](images/template/segment.png)  
+      Sample mask(means only white pixels will be painted):  
+      ![Sample mask](images/template/mask.png)  

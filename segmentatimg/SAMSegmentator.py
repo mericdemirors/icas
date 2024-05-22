@@ -188,7 +188,9 @@ class SAMSegmentator():
                 raise(SAMPromptGenerationQuitException("SAMSegmentator received key q for quitting"))
             if key == ord(" "):
                 mask = self.get_mask_from_prompt(self.original, self.prompt_boxes, self.prompt_coords, self.prompt_labels)
-                cv2.imshow("Mask", mask.astype(np.uint8)*255)
+                display_image = self.original.copy()
+                display_image[mask == 0] = 0
+                cv2.imshow("Mask", display_image)
             if key == ord("f"):
                 cv2.destroyWindow("Annotations")
                 cv2.destroyWindow("Mask")

@@ -8,7 +8,7 @@ sam_auto = SamAutomaticMaskGenerator(sam_config)
 SAM_segmentator = SAMSegmentator(sam_with_prompt, "cpu")
 
 sgmt = Segmentator(image_folder="/home/mericdemirors/Pictures/jetle", 
-                    method="SAM", template_threshold=0.1, SAMSegmentator=SAM_segmentator,
+                    method="superpixel", template_threshold=0.1, SAMSegmentator=SAM_segmentator,
                     templates_path="/home/mericdemirors/Pictures/templates", attentions_path="/home/mericdemirors/Pictures/attentions",
                     segments_path="/home/mericdemirors/Pictures/segments", masks_path="/home/mericdemirors/Pictures/masks")
 sgmt()
