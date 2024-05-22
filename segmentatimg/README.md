@@ -3,31 +3,31 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
 
 ## 1- image is divided into segments with one of these methods. Segmented image will have labeled segments starting from 1(also edges with value of 0 if any):
 * edge: image is divided with edges using opencv's operations
-* superpixel: opencv's superpixel algorithm is used
-* kmeans: opencv's kmeans algorithm is used
+* superpixel: [opencv's superpixel](https://docs.opencv.org/4.x/df/d6c/group__ximgproc__superpixel.html#ga503d462461962668b3bffbf2d7b72038) is used
+* kmeans: [opencv's kmeans](https://docs.opencv.org/4.x/d5/d38/group__core__cluster.html#ga9a34dc06c6ec9460e90860f15bcd2f88) is used
 * slickmeans: first opencv's superpixel, than opencv's kmeans is applied
-* chanvase: chan vese from skimage algorithm used
-* felzenszwalb: felzenszwalb from skimage algorithm used
-* quickshift: quickshift from skimage algorithm used
-* graph: opencv's graph segmentation is used
-* grabcut: opencv's grabcut algorithm is used. Segmentation is done manually on two window with five annotation types:  
+* chanvase: [skimage's chan vese](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.chan_vese) is used
+* felzenszwalb: [skimage's felzenszwalb](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.felzenszwalb) is used
+* quickshift: [skimage's quickshift](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.quickshift) is used
+* graph: [opencv's graph segmentation](https://docs.opencv.org/4.x/dd/d19/classcv_1_1ximgproc_1_1segmentation_1_1GraphSegmentation.html) is used
+* grabcut: [opencv's grabcut](https://docs.opencv.org/4.x/d3/d47/group__imgproc__segmentation.html#ga909c1dda50efcbeaa3ce126be862b37f) is used. Segmentation is done manually on two window with five annotation types:  
   * Segments window: displays the current segments of image  
   * Annotations window: displays the current annotations on image  
-  * rectangle annotation: annotated with mouse middle button, indicates the attention area of the algorithm  
+  * rectangle annotation: annotated with mouse middle button, indicates the attention area of the grabcut  
   * foreground and background annotation: annotated with left and right click, indicates the pixels that are definitely foreground or background  
   * possible foreground and background annotation: annotated with ctrl + left and right click, indicates the pixels that may be foreground or background  
-
-  Also keyboard inputs are listened for various actions other than painting:  
+    
+    Also keyboard inputs are listened for various actions other than painting:  
   * q: quits the segmentation  
   * f: finishes the image segmentation and passes image to interactive painting  
   * r: resets the annotations  
-  * space: runs grabcut algorithm once(multiple presses are needed for convergence)  
-* SAM: Meta's Segment Anything Model is used. Segmentation is done by one of two SAM models: SamAutomaticMaskGenerator(doesnt require any annotation, all processes are automatic) or SamPredictor(prompt must be generated on a window with three annotation types):  
+  * space: runs grabcut once(multiple presses are needed for convergence)  
+* SAM: [Meta's Segment Anything Model](https://github.com/facebookresearch/segment-anything) is used. Segmentation is done by one of two SAM models: SamAutomaticMaskGenerator(doesnt require any annotation, all processes are automatic) or SamPredictor(prompt must be generated on a window with three annotation types):  
   * Annotations window: displays the current segments of image  
-  * rectangle annotation: annotated with mouse middle button, indicates the attention area of the algorithm  
+  * rectangle annotation: annotated with mouse middle button, indicates the attention area  
   * foreground and background annotation: annotated with left and right click, indicates the pixels that are definitely foreground or background  
 
-  Also keyboard inputs are listened for various actions other than painting:  
+    Also keyboard inputs are listened for various actions other than painting:  
   * q: quits the segmentation  
   * r: resets the annotations  
   * space: ends segmenting and passes prompt to prediction function  
