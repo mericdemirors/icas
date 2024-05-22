@@ -21,6 +21,5 @@ Segmentator
 - segmentator preview images
 
 TO-TIDY
-- write READMEs with links and images
 
 TO-FIX
