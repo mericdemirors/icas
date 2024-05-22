@@ -18,7 +18,6 @@ DL_ModelTrainer
 GrabcutSegment
 SAMSegmentator
 Segmentator
-- segmentator preview images
 
 TO-TIDY
 

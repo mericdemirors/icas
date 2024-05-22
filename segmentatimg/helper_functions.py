@@ -311,6 +311,7 @@ def segment_image(image_path:str="", method:str="", edge_th:int=60, bilateral_d:
         min_segment_size (int): min size of a segment for felzenszwalb or graph. Defaults to 100.
         segment_size (int): size of segments for felzenszwalb, quickshift or graph. Defaults to 100.
         color_weight (float): weight of color to space in quickshift. Defaults to 0.5.
+        SAMSegmentator(SAMSegmentator): SAMSegmentator object. Defaults to None.
         verbose (int, optional): verbose level. Defaults to 0.
 
     Returns:
@@ -343,6 +344,57 @@ def segment_image(image_path:str="", method:str="", edge_th:int=60, bilateral_d:
     # contours
 
     return result_image
+
+# displays all segmentation method outputs
+def preview_methods(image_path:str="", edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100,
+                  templateWindowSize:int=7, searchWindowSize:int=21, h:int=10, hColor:int=10, region_size:int=40, ruler:int=30,
+                  k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100, sigma:float=0.5,
+                  min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, verbose:int=0):
+    """previews all segmentation methods on image. Multiple same/similar meaning carrying parameters
+    has used to create a clear distinction between different segmentation techniques. Further inforamtion could
+    be obtained from directly each techniques descrtion.
+
+    Args:
+        image_path (str, optional): path to image to segment. Defaults to "".
+        edge_th (int, optional): threshold to consider a pixel as edge. Defaults to 60.
+        bilateral_d (int, optional): window size for cv2.bilateral. Defaults to 7.
+        sigmaColor (int, optional): color strength for cv2.bilateral. Defaults to 100.
+        sigmaSpace (int, optional): distance strength for cv2.bilateral. Defaults to 100.
+        templateWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColored. Defaults to 7.
+        searchWindowSize (int, optional): window size for cv2.fastNlMeansDenoisingColored. Defaults to 21.
+        h (int, optional): noise remove strenght for cv2.fastNlMeansDenoisingColored. Defaults to 10.
+        hColor (int, optional): color noise remove strenght for cv2.fastNlMeansDenoisingColored. Defaults to 10.
+        region_size (int, optional): region_size parameter for superpixel. Defaults to 40.
+        ruler (int, optional): ruler parameter for superpixel. Defaults to 30.
+        k (int, optional): k parameter for opencv kmeans or graph segmentation. Defaults to 15.
+        color_importance (int, optional): importance of pixel colors proportional to pixels coordinates for kmeans. Defaults to 5.
+        number_of_bins (int): number of segments to extract from chan vase method output
+        segment_scale (int): segment scale parameter for felzenszwalb. Defaults to 100.
+        sigma (float): standard deviation of Gaussian kernel in felzenszwalb or sigma parameter for graph segmentation. Defaults to 0.5.
+        min_segment_size (int): min size of a segment for felzenszwalb or graph. Defaults to 100.
+        segment_size (int): size of segments for felzenszwalb, quickshift or graph. Defaults to 100.
+        color_weight (float): weight of color to space in quickshift. Defaults to 0.5.
+        verbose (int, optional): verbose level. Defaults to 0.
+    """
+
+    edge_image = edge_segmentation(image_path, edge_th, bilateral_d, sigmaColor, sigmaSpace, templateWindowSize, searchWindowSize, h, hColor, verbose=verbose-1)
+    cv2.imshow("edge", (edge_image * (255 // edge_image.max()) if edge_image.max() < 255 else edge_image).astype(np.uint8))
+    superpixel_image = superpixel_segmentation(image_path, region_size=region_size, ruler=ruler, verbose=verbose-1)
+    cv2.imshow("superpixel", (superpixel_image * (255 // superpixel_image.max()) if superpixel_image.max() < 255 else superpixel_image).astype(np.uint8))
+    kmeans_image = kmeans_segmentation(image_path, k=k, color_importance=color_importance, verbose=verbose-1)
+    cv2.imshow("kmeans", (kmeans_image * (255 // kmeans_image.max()) if kmeans_image.max() < 255 else kmeans_image).astype(np.uint8))
+    slickmeans_image = slickmeans_segmentation(image_path, region_size=region_size, ruler=ruler, k=k, verbose=verbose-1)
+    cv2.imshow("slickmeans", (slickmeans_image * (255 // slickmeans_image.max()) if slickmeans_image.max() < 255 else slickmeans_image).astype(np.uint8))
+    chan_vase_image = chan_vase_segmentation(image_path, number_of_bins=number_of_bins, verbose=verbose-1)
+    cv2.imshow("chanvase", (chan_vase_image * (255 // chan_vase_image.max()) if chan_vase_image.max() < 255 else chan_vase_image).astype(np.uint8))
+    felzenszwalb_image = felzenszwalb_segmentation(image_path, segment_scale=segment_scale, sigma=sigma, min_segment_size=min_segment_size, verbose=verbose-1)
+    cv2.imshow("felzenszwalb", (felzenszwalb_image * (255 // felzenszwalb_image.max()) if felzenszwalb_image.max() < 255 else felzenszwalb_image).astype(np.uint8))
+    quickshift_image = quickshift_segmentation(image_path, segment_size=segment_size, color_weight=color_weight, verbose=verbose-1)
+    cv2.imshow("quickshift", (quickshift_image * (255 // quickshift_image.max()) if quickshift_image.max() < 255 else quickshift_image).astype(np.uint8))
+    graph_image = graph_segmentation(image_path, k, min_segment_size, sigma, verbose=verbose-1)
+    cv2.imshow("graph", (graph_image * (255 // graph_image.max()) if graph_image.max() < 255 else graph_image).astype(np.uint8))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 # fills selected segments with color
 def fill(result_image, segmented_image, painted_pixels, click_row:int, click_column:int, color, verbose:int=0):
