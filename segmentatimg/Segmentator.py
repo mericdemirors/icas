@@ -383,7 +383,7 @@ class Segmentator:
         elif key == ord('p'): # previous image without saving current one
             print_verbose("p", "going back from image " + image_name + " without saving", verbose=verbose-1)
             return "previous"
-        elif key == ord('s'): # save
+        elif key == ord(' '): # save
             print_verbose("s", "going forward from image " + image_name + " after saving", verbose=verbose-1)
             self.save_masks(os.path.join(self.save_folder, image_name[:image_name.rindex(".")] + "_mask_"), self.result_image, self.painted_pixels, verbose=verbose-1)
             return "save"

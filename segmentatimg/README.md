@@ -31,6 +31,8 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
   * q: quits the segmentation  
   * r: resets the annotations  
   * space: ends segmenting and passes prompt to prediction function  
+  * f: finishes the segmentation and passes image to interactive painting  
+  * z: reverses the last annotation  
 
 ## 2- Two window is showed to user, one for color selecting other for painting segments.  
 * Color selecting window is used for selecting the segmentation color and displaying the painting mode. There are 2 paint modes other than default clicking actions. One is for continuously filling and other is unfilling. Both of them are activated and deactivated with double click on related mouse button.  
@@ -38,7 +40,7 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
   * q: quits the segmentation  
   * n: goes to next image in folder(no save)  
   * p: goes to previous image in folder(no save)  
-  * s: saves the current image masks with "original_image_name\_mask\_(R:value,G:value,B:value).png" format and goes to next image  
+  * space: saves the current image masks with "original_image_name\_mask\_(R:value,G:value,B:value).png" format and goes to next image  
   * z: reverses the last action  
   * r: resets the segmentation  
   * d: displays the image segmentation and painted pixels for debug purposes  

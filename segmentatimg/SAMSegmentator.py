@@ -27,11 +27,11 @@ class SAMSegmentator():
         """
         self.paint_dict = None
         self.clicked = False                # flag for drawing action
-        self.currently_drawing_rect = False # flag for rectangle action
-        self.display_rects = []             # selected rectangles for displaying
-        self.prompt_rects = []              # selected rectangles for prompting
+        self.currently_drawing_box = False # flag for box action
+        self.prompt_boxes = []              # selected boxes for prompting
         self.prompt_coords = []             # selected coords for prompting
         self.prompt_labels = []             # selected labels for prompting
+        self.ctrl_z_stack = []              # to store and reverse annotations
 
     # listens for user input
     def annotation_event_listener(self, event, x:int, y:int, flags, param, verbose=0):
@@ -44,29 +44,27 @@ class SAMSegmentator():
             flags (opencv flags): flags
             param (dictionary): parameters
         """
-        # rectangle selection with middle button
+        # box selection with middle button
         if event == cv2.EVENT_MBUTTONDOWN:
-            self.currently_drawing_rect = True
+            self.currently_drawing_box = True
             self.ix, self.iy = x,y
         elif event == cv2.EVENT_MOUSEMOVE:
-            if self.currently_drawing_rect:
+            if self.currently_drawing_box:
                 self.image = self.altered.copy()
-                for r in self.display_rects:
+                for r in self.prompt_boxes:
                     cv2.rectangle(self.image, (r[0], r[1]), (r[2], r[3]), [255,0,0], 1)
                 cv2.rectangle(self.image, (self.ix, self.iy), (x, y), [255,0,0], 1)
         elif event == cv2.EVENT_MBUTTONUP:
-            self.currently_drawing_rect = False
-            for r in self.display_rects:
-                cv2.rectangle(self.altered, (r[0], r[1]), (r[2], r[3]), [255,0,0], 1)
-            cv2.rectangle(self.altered, (self.ix, self.iy), (x, y), [255,0,0], 1)
-            self.display_rects.append((self.ix, self.iy, x, y))
+            self.ctrl_z_stack.append((self.prompt_boxes.copy(), self.prompt_coords.copy(), self.prompt_labels.copy()))
+            self.currently_drawing_box = False
+            self.draw_annotations(box_x=x, box_y=y)
             x = max(x, 0) # clips negatives to zero
             x = min(max(x, 0), self.image.shape[1]) # clips out of bounds values to max value
             y = max(y, 0) # clips negatives to zero
             y = min(max(y, 0), self.image.shape[0]) # clips out of bounds values to max value
-            self.prompt_rects.append(np.array([self.ix, self.iy, x, y]))
+            self.prompt_boxes.append(np.array([self.ix, self.iy, x, y]))
             self.altered = self.image.copy()
-        if self.currently_drawing_rect:
+        if self.currently_drawing_box:
             return
 
         # annotation type selection with left/right click
@@ -77,21 +75,91 @@ class SAMSegmentator():
             self.clicked = True
             self.paint_dict = self.DRAW_BG
         elif self.clicked and (event == cv2.EVENT_LBUTTONUP or event == cv2.EVENT_RBUTTONUP):
+            self.ctrl_z_stack.append((self.prompt_boxes.copy(), self.prompt_coords.copy(), self.prompt_labels.copy()))
             self.clicked = False
-            cv2.circle(self.altered, (x,y), 3, self.paint_dict["color"], -1)
+            self.draw_annotations(click_x=x, click_y=y)
             self.prompt_coords.append([x,y])
             self.prompt_labels.append(self.paint_dict["val"])
             self.image = self.altered.copy()
-   
+    
+    # draws annotations on image
+    def draw_annotations(self, box_x:int=None, box_y:int=None, click_x:int=None, click_y:int=None):
+        """draws currently active annotations
+
+        Args:
+            box_x (int, optional): x coords input for new box annotation,
+            None means no box annotation is provided when it is called Defaults to None.
+            box_y (int, optional): y coords input for new box annotation,
+            None means no box annotation is provided when it is called Defaults to None.
+            click_x (int, optional): x coords input for new point annotation,
+            None means no point annotation is provided when it is called Defaults to None.
+            click_y (int, optional): y coords input for new point annotation,
+            None means no point annotation is provided when it is called Defaults to None.
+        """
+        # if there is a new annotation
+        for r in self.prompt_boxes:
+            cv2.rectangle(self.altered, (r[0], r[1]), (r[2], r[3]), [255,0,0], 1)
+        if box_x:
+            cv2.rectangle(self.altered, (self.ix, self.iy), (box_x, box_y), [255,0,0], 1)
+
+        for (past_x,past_y), past_v in zip(self.prompt_coords, self.prompt_labels):
+            # select color according to point label
+            if past_v == 0:
+                past_c = [0,0,255]
+            elif past_v == 1:
+                past_c = [0,255,0]
+            cv2.circle(self.altered, (past_x,past_y), 3, past_c, -1)
+        if click_x:
+            cv2.circle(self.altered, (click_x,click_y), 3, self.paint_dict["color"], -1)
+
+    # calculates binary mask from prompt predicted masks
+    def get_mask_from_prompt(self, image, prompt_boxes, prompt_coords, prompt_labels):
+        """creates binary mask with given prompt
+
+        Args:
+            image (numpy.ndarray): image to generate mask for
+            prompt_boxes (list): box annotations
+            prompt_coords (list): point annotations
+            prompt_labels (list): point annotation labels
+
+        Returns:
+            numpy.ndarray: binary mask
+        """
+        # assigning coords and labels to their boxes
+        # since multiple boxes and multiple coords/labels are not supported each box will be passed with
+        # its own related coords and labels individualy
+        coords_list = [np.array([pc for pc in prompt_coords 
+                    if ((r[0]<=pc[0]<=r[2]) and (r[1]<=pc[1]<=r[3]))])for r in prompt_boxes]
+        label_list = [np.array([prompt_labels[e] for e,pc in enumerate(prompt_coords)
+                    if ((r[0]<=pc[0]<=r[2]) and (r[1]<=pc[1]<=r[3]))]) for r in prompt_boxes]
+
+        # set the image
+        if not np.array_equal(self.SAM_setted_image, image):
+            self.SAM.set_image(image)
+            self.SAM_setted_image = image.copy()
+
+        # segment each pass individualy with its prompt
+        masks = []
+        for (c, l, b) in zip(coords_list, label_list, prompt_boxes):
+            if len(c) == 0:
+                c = None
+            if len(l) == 0:
+                l = None
+            so = self.SAM.predict(point_coords=c, point_labels=l, box=b)
+            masks.append(so[0][0])
+        # generate one mask and get labels
+        final_mask = np.logical_or.reduce(masks)
+        return final_mask
+
     # generated prompt with user input for prompted mask prediction
-    def generate_prompt(self, image, verbose=0):
-        """function to interactively generate SAM prompt
+    def generate_mask(self, image, verbose=0):
+        """function to interactively generate SAM mask
 
         Args:
             image (numpy.ndarray): original image
 
         Returns:
-            list: boxes, coords and labels for prompting
+            numpy.ndarray: mask
         """
         self.reset()
         self.original = image.copy()
@@ -103,18 +171,30 @@ class SAMSegmentator():
         
         while True:
             cv2.imshow("Annotations", self.image)
+            self.draw_annotations()
             key = cv2.waitKey(1)
 
             # key bindings
             if key == ord("q"):
-                cv2.destroyWindow("annotation")
+                cv2.destroyWindow("Annotations")
+                cv2.destroyWindow("Mask")
                 raise(SAMPromptGenerationQuitException("SAMSegmentator received key q for quitting"))
             if key == ord(" "):
+                mask = self.get_mask_from_prompt(self.original, self.prompt_boxes, self.prompt_coords, self.prompt_labels)
+                cv2.imshow("Mask", mask.astype(np.uint8)*255)
+            if key == ord("f"):
                 cv2.destroyWindow("Annotations")
-                return self.prompt_rects, self.prompt_coords, self.prompt_labels
+                cv2.destroyWindow("Mask")
+                return mask
+            elif key == ord("z"): # reverse last annotation
+                if len(self.ctrl_z_stack) > 0:
+                    last_state = self.ctrl_z_stack.pop()
+                    (self.prompt_boxes, self.prompt_coords, self.prompt_labels) = last_state
+                    self.image = self.altered = self.original.copy()
             elif key == ord("r"): # reset everything
                 self.reset()
                 self.image = self.altered = self.original.copy()
+
 
     # labels the image segments
     def label_the_segments(self, image, segment_value:int, start_id:int=1):
@@ -198,34 +278,8 @@ class SAMSegmentator():
         self.original = image.copy()
 
         if type(self.SAM) == SamPredictor:
-            # prompt generation
-            prompt_rects, prompt_coords, prompt_labels = self.generate_prompt(image)
-
-            # assigning coords and labels to their boxes
-            # since multiple boxes and multiple coords/labels are not supported each box will be passed with
-            # its own related coords and labels individualy
-            coords_list = [np.array([pc for pc in prompt_coords 
-                        if ((r[0]<=pc[0]<=r[2]) and (r[1]<=pc[1]<=r[3]))])for r in prompt_rects]
-            label_list = [np.array([prompt_labels[e] for e,pc in enumerate(prompt_coords)
-                        if ((r[0]<=pc[0]<=r[2]) and (r[1]<=pc[1]<=r[3]))]) for r in prompt_rects]
-
-            # set the image
-            if not np.array_equal(self.SAM_setted_image, image):
-                self.SAM.set_image(image)
-                self.SAM_setted_image = image.copy()
-
-            # segment each pass individualy with its prompt
-            masks = []
-            for (c, l, b) in zip(coords_list, label_list, prompt_rects):
-                if len(c) == 0:
-                    c = None
-                if len(l) == 0:
-                    l = None
-                so = self.SAM.predict(point_coords=c, point_labels=l, box=b)
-                masks.append(so[0][0])
-            # generate one mask and get labels
-            final_mask = np.logical_or.reduce(masks)
-            SAM_segment = self.get_label_from_SAM_with_prompt_output_mask(final_mask)
+            mask = self.generate_mask(image)
+            SAM_segment = self.get_label_from_SAM_with_prompt_output_mask(mask)
         
         elif type(self.SAM) == SamAutomaticMaskGenerator:
             # get mask and label the segments
