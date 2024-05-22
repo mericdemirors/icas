@@ -191,19 +191,19 @@ class DL_Clusteror():
         clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
         return clusters
 
-    # calculates clusters from selected template images
-    def calculate_template_clusters(self, template_paths: list, verbose: int=0):
-        """calculates clusters of templates
+    # calculates clusters from selected representative images
+    def calculate_representative_clusters(self, representative_paths: list, verbose: int=0):
+        """calculates clusters of representatives
 
         Args:
-            template_paths (list): list of template images
+            representative_paths (list): list of representative images
             verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
             list: list of clusters
         """
         features = {}
-        for tp in tqdm(template_paths, desc="Getting template features", leave=False):
+        for tp in tqdm(representative_paths, desc="Getting representative features", leave=False):
             image = self.model_trainer.dataset.read_image(tp)
             image = image[np.newaxis, ...]
             tensor_image = torch.from_numpy(image).to(self.model_trainer.device)
@@ -223,8 +223,8 @@ class DL_Clusteror():
         clusters = [[paths[i] for i in range(len(paths)) if labels[i] == id] for id in set(labels)]
         return clusters
 
-    # merges clustered templates
-    def merge_clusters_by_templates(self, batch_folder_paths: list, verbose: int=0):
+    # merges clustered representatives
+    def merge_clusters_by_representatives(self, batch_folder_paths: list, verbose: int=0):
         """merges individual clusters in all batch folders into one result folder
 
         Args:
@@ -234,23 +234,23 @@ class DL_Clusteror():
         Returns:
             list: list of merged clusters
         """
-        # get one template from all clusters at each batch
-        template_cluster_dict = {}
+        # get one representative from all clusters at each batch
+        representative_cluster_dict = {}
         for batch_folder in batch_folder_paths:
             for cluster_folder in os.listdir(batch_folder):
                 if cluster_folder != "outliers":
-                    template_im = os.listdir(os.path.join(batch_folder, cluster_folder))[0]
-                    template_cluster_dict[template_im] = os.path.join(batch_folder, cluster_folder)
-        all_template_files = sorted(list(template_cluster_dict.keys()))
+                    representative_image = os.listdir(os.path.join(batch_folder, cluster_folder))[0]
+                    representative_cluster_dict[representative_image] = os.path.join(batch_folder, cluster_folder)
+        all_representative_files = sorted(list(representative_cluster_dict.keys()))
 
         if self.option != "merge":
-            print_verbose("r", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
+            print_verbose("r", str(len(representative_cluster_dict)) + " representative found", verbose=verbose-1)
         if self.option == "merge":
-            print_verbose("m", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
+            print_verbose("m", str(len(representative_cluster_dict)) + " representative found", verbose=verbose-1)
 
-        # compute all template similarities in one pass
-        template_paths = [os.path.abspath(os.path.join(template_cluster_dict[file], file)) for file in all_template_files]
-        clusters = self.calculate_template_clusters(template_paths, verbose=verbose-1)
+        # compute all representative similarities in one pass
+        representative_paths = [os.path.abspath(os.path.join(representative_cluster_dict[file], file)) for file in all_representative_files]
+        clusters = self.calculate_representative_clusters(representative_paths, verbose=verbose-1)
 
         # setting the folders for merging
         all_cluster_folder_paths = []
@@ -270,9 +270,9 @@ class DL_Clusteror():
                 if cluster_folder == "outliers":
                     outlier_folders.append(os.path.join(batch_folder, cluster_folder))
 
-        template_cluster_folders_to_merge_list = all_cluster_folder_paths + will_be_merged_clusters + [outlier_folders]
+        representative_cluster_folders_to_merge_list = all_cluster_folder_paths + will_be_merged_clusters + [outlier_folders]
 
-        return template_cluster_folders_to_merge_list
+        return representative_cluster_folders_to_merge_list
 
     # function to pack all things above into one call
     def create_clusters(self, batch_idx: int, start: int, end: int, verbose: int=0):
@@ -331,25 +331,25 @@ class DL_Clusteror():
                                     if os.path.isdir(os.path.join(self.result_container_folder, f))])
 
         # merge each batch to get which clusters folders should be merged together
-        template_cluster_folders_to_merge_list = self.merge_clusters_by_templates(batch_folder_paths, verbose=verbose-1)
+        representative_cluster_folders_to_merge_list = self.merge_clusters_by_representatives(batch_folder_paths, verbose=verbose-1)
 
         if self.option != "merge":
-            print_verbose("r", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
+            print_verbose("r", str(len(representative_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
         if self.option == "merge":
-            print_verbose("m", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
+            print_verbose("m", str(len(representative_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
         
         # creating result folder and merging cluster folders
         result_folder_path = os.path.join(self.result_container_folder, "results")
         os.mkdir(result_folder_path)
-        for e, template_cluster_folders_to_merge in enumerate(template_cluster_folders_to_merge_list):
+        for e, representative_cluster_folders_to_merge in enumerate(representative_cluster_folders_to_merge_list):
             cluster_folder_path = os.path.join(result_folder_path, "cluster_" + str(e))
-            if e == len(template_cluster_folders_to_merge_list) - 1:
+            if e == len(representative_cluster_folders_to_merge_list) - 1:
                 cluster_folder_path = os.path.join(result_folder_path, "outliers")
 
             os.mkdir(cluster_folder_path)
-            for template_cluster_folder in template_cluster_folders_to_merge:
-                for file in os.listdir(template_cluster_folder):
-                    image_transfer(self.transfer, os.path.join(template_cluster_folder, file), os.path.join(cluster_folder_path, file))
+            for representative_cluster_folder in representative_cluster_folders_to_merge:
+                for file in os.listdir(representative_cluster_folder):
+                    image_transfer(self.transfer, os.path.join(representative_cluster_folder, file), os.path.join(cluster_folder_path, file))
                     
         # removing unnecessary files and folders after merging results
         for folder in os.listdir(self.result_container_folder):

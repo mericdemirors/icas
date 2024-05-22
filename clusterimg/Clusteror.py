@@ -208,43 +208,43 @@ class Clusteror():
 
         return image_similarities
 
-    # calculates similarities between given templates
-    def calculate_template_similarities(self, template_paths: list, verbose: int=0):
-        """calculates similarity of templates
+    # calculates similarities between given representatives
+    def calculate_representative_similarities(self, representative_paths: list, verbose: int=0):
+        """calculates similarity of representatives
 
         Args:
-            template_paths (list): list of template file paths
+            representative_paths (list): list of representative file paths
             verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
             dictionary: dictionary of image pairs similarity in that batch
         """
-        if len(template_paths) < 2:
+        if len(representative_paths) < 2:
             return {}
 
-        # get template features
-        templates = get_image_features(self.method, template_paths, self.size, self.scale, verbose=verbose-1)
+        # get representative features
+        representatives = get_image_features(self.method, representative_paths, self.size, self.scale, verbose=verbose-1)
 
-        # discarding the template combinations that were in the same batch
-        batch_cluster_template_list = [file.split(os.sep)[-3:] for file in template_paths]
+        # discarding the representative combinations that were in the same batch
+        batch_cluster_representative_list = [file.split(os.sep)[-3:] for file in representative_paths]
         
-        # get the templates from same batch folder
-        same_batch_templates = []
-        for b in set([bct[0] for bct in batch_cluster_template_list]):
-            same_batch_templates.append([file for e, file in enumerate(template_paths) if batch_cluster_template_list[e][0] == b])
+        # get the representatives from same batch folder
+        same_batch_representatives = []
+        for b in set([bct[0] for bct in batch_cluster_representative_list]):
+            same_batch_representatives.append([file for e, file in enumerate(representative_paths) if batch_cluster_representative_list[e][0] == b])
 
         # and discard them to decrease number of similarity checks
         discarded_combs = []
-        for l in same_batch_templates:
+        for l in same_batch_representatives:
             if len(l) > 1:
                 discarded_combs = discarded_combs + list(combinations(l, 2))
 
-        comb = list(combinations(template_paths, 2))  # all pair combinations of templates
+        comb = list(combinations(representative_paths, 2))  # all pair combinations of representatives
         comb = list(set(comb).difference(set(discarded_combs)))
-        bools = np.ones((len(template_paths), len(template_paths)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
+        bools = np.ones((len(representative_paths), len(representative_paths)), dtype=np.int8)  # row i means all (i, *) pairs, column j means all (*, j) pairs
 
         if len(comb) < 1:
-            print_verbose("f", "no template pair combination pair found", verbose=verbose-1)
+            print_verbose("f", "no representative pair combination pair found", verbose=verbose-1)
         if self.option != "merge":
             print_verbose("r", "processing total of " + str(len(comb)) + " pair combinations", verbose=verbose-1)
         if self.option == "merge":
@@ -262,7 +262,7 @@ class Clusteror():
         last_verbose_time = [datetime.datetime.now()]  # Start time
         last_checkpoint_time = [datetime.datetime.now()]  # Start time
         
-        template_similarities = {}
+        representative_similarities = {}
         # function to assign at threads
         def calculate_similarity_for_chunk(chunk: list):
             """calculates similarity in chunk by calling calculate_similarity for each pair
@@ -276,13 +276,13 @@ class Clusteror():
             return [
                 calculate_similarity(
                     pair,
-                    template_paths.index(pair[0]),
-                    template_paths.index(pair[1]),
+                    representative_paths.index(pair[0]),
+                    representative_paths.index(pair[1]),
                     chunks.index(chunk) % self.num_of_threads,
                     self.lock,
                     self.threshold,
-                    template_similarities,
-                    templates,
+                    representative_similarities,
+                    representatives,
                     bools,
                     last_checkpoint_time,
                     last_verbose_time,
@@ -300,10 +300,10 @@ class Clusteror():
         results = thread_this(calculate_similarity_for_chunk, chunks)
         flat_results = [result for sublist in results for result in sublist]
 
-        return template_similarities
+        return representative_similarities
 
     # function to merge batch folders clusters
-    def merge_clusters_by_templates(self, batch_folder_paths: list, verbose: int=0):
+    def merge_clusters_by_representatives(self, batch_folder_paths: list, verbose: int=0):
         """merges individual clusters in all batch folders into one result folder
 
         Args:
@@ -313,26 +313,26 @@ class Clusteror():
         Returns:
             list: list of merged clusters
         """
-        # get one template from all clusters at each batch
-        template_cluster_dict = {}
+        # get one representative from all clusters at each batch
+        representative_cluster_dict = {}
         for batch_folder in batch_folder_paths:
             for cluster_folder in os.listdir(batch_folder):
                 if cluster_folder != "outliers":
-                    template_im = os.listdir(os.path.join(batch_folder, cluster_folder))[0]
-                    template_cluster_dict[template_im] = os.path.join(batch_folder, cluster_folder)
-        all_template_files = sorted(list(template_cluster_dict.keys()))
+                    representative_image = os.listdir(os.path.join(batch_folder, cluster_folder))[0]
+                    representative_cluster_dict[representative_image] = os.path.join(batch_folder, cluster_folder)
+        all_representative_files = sorted(list(representative_cluster_dict.keys()))
 
         if self.option != "merge":
-            print_verbose("r", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
+            print_verbose("r", str(len(representative_cluster_dict)) + " representative found", verbose=verbose-1)
         if self.option == "merge":
-            print_verbose("m", str(len(template_cluster_dict)) + " template found", verbose=verbose-1)
+            print_verbose("m", str(len(representative_cluster_dict)) + " representative found", verbose=verbose-1)
 
-        # compute all template similarities in one pass
-        template_paths = [os.path.join(template_cluster_dict[file], file) for file in all_template_files]
-        template_similarities = self.calculate_template_similarities(template_paths, verbose=verbose-1)
+        # compute all representative similarities in one pass
+        representative_paths = [os.path.join(representative_cluster_dict[file], file) for file in all_representative_files]
+        representative_similarities = self.calculate_representative_similarities(representative_paths, verbose=verbose-1)
 
-        # clustering templates according to similarities
-        clusters, clustered_templates = cluster(sorted(template_similarities.items(), key=lambda x: x[1], reverse=True), self.threshold, verbose=verbose-1)
+        # clustering representatives according to similarities
+        clusters, clustered_representatives = cluster(sorted(representative_similarities.items(), key=lambda x: x[1], reverse=True), self.threshold, verbose=verbose-1)
 
         # setting the folders for merging
         all_cluster_folder_paths = []
@@ -352,9 +352,9 @@ class Clusteror():
                 if cluster_folder == "outliers":
                     outlier_folders.append(os.path.join(batch_folder, cluster_folder))
 
-        template_cluster_folders_to_merge_list = all_cluster_folder_paths + will_be_merged_clusters + [outlier_folders]
+        representative_cluster_folders_to_merge_list = all_cluster_folder_paths + will_be_merged_clusters + [outlier_folders]
 
-        return template_cluster_folders_to_merge_list
+        return representative_cluster_folders_to_merge_list
 
     # function to pack all things above into one call
     def create_clusters(self, batch_idx: int, image_files: list, verbose: int=0):
@@ -415,25 +415,25 @@ class Clusteror():
                                     if os.path.isdir(os.path.join(self.result_container_folder, f))])
 
         # merge each batch to get which clusters folders should be merged together
-        template_cluster_folders_to_merge_list = self.merge_clusters_by_templates(batch_folder_paths, verbose=verbose-1)
+        representative_cluster_folders_to_merge_list = self.merge_clusters_by_representatives(batch_folder_paths, verbose=verbose-1)
 
         if self.option != "merge":
-            print_verbose("r", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
+            print_verbose("r", str(len(representative_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
         if self.option == "merge":
-            print_verbose("m", str(len(template_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
+            print_verbose("m", str(len(representative_cluster_folders_to_merge_list) - 1) + " cluster found at result", verbose=verbose-1)
         
         # creating result folder and merging cluster folders
         result_folder_path = os.path.join(self.result_container_folder, "results")
         os.mkdir(result_folder_path)
-        for e, template_cluster_folders_to_merge in enumerate(template_cluster_folders_to_merge_list):
+        for e, representative_cluster_folders_to_merge in enumerate(representative_cluster_folders_to_merge_list):
             cluster_folder_path = os.path.join(result_folder_path, "cluster_" + str(e))
-            if e == len(template_cluster_folders_to_merge_list) - 1:
+            if e == len(representative_cluster_folders_to_merge_list) - 1:
                 cluster_folder_path = os.path.join(result_folder_path, "outliers")
 
             os.mkdir(cluster_folder_path)
-            for template_cluster_folder in template_cluster_folders_to_merge:
-                for file in os.listdir(template_cluster_folder):
-                    image_transfer(self.transfer, os.path.join(template_cluster_folder, file), os.path.join(cluster_folder_path, file))
+            for representative_cluster_folder in representative_cluster_folders_to_merge:
+                for file in os.listdir(representative_cluster_folder):
+                    image_transfer(self.transfer, os.path.join(representative_cluster_folder, file), os.path.join(cluster_folder_path, file))
                     
         # removing unnecessary files and folders after merging results
         for folder in os.listdir(self.result_container_folder):
