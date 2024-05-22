@@ -22,7 +22,7 @@ bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 # Clustering images
 def cluster(sorted_similarities: list, clustering_threshold: float, verbose: int=0):
     """clusters list of similarities of item pairs,
-    if and X and Y image are more similar then clustering threshold, 
+    if and X and Y image are more similar than clustering threshold, 
     they are putted into same cluster,
     if any X and Y image has an image chain X-A-B-...-M-Y that has 
     consecutive pair similarities bigger than threshold, they are putted into same cluster
