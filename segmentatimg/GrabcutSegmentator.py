@@ -47,13 +47,13 @@ class GrabcutSegmentator():
             if self.currently_drawing_rect:
                 self.image = self.altered.copy()
                 for r in self.display_rects:
-                    cv2.rectangle(self.image, (r[0], r[1]), (r[2], r[3]), [0,255,0], 1)
-                cv2.rectangle(self.image, (self.ix, self.iy), (x, y), [0,255,0], 1)
+                    cv2.rectangle(self.image, (r[0], r[1]), (r[2], r[3]), [255,0,0], 1)
+                cv2.rectangle(self.image, (self.ix, self.iy), (x, y), [255,0,0], 1)
         elif event == cv2.EVENT_MBUTTONUP:
             self.currently_drawing_rect = False
             for r in self.display_rects:
-                cv2.rectangle(self.altered, (r[0], r[1]), (r[2], r[3]), [0,255,0], 1)
-            cv2.rectangle(self.altered, (self.ix, self.iy), (x, y), [0,255,0], 1)
+                cv2.rectangle(self.altered, (r[0], r[1]), (r[2], r[3]), [255,0,0], 1)
+            cv2.rectangle(self.altered, (self.ix, self.iy), (x, y), [255,0,0], 1)
             self.display_rects.append((self.ix, self.iy, x, y))
             self.rect = (min(self.ix, x), min(self.iy, y), abs(self.ix - x), abs(self.iy - y))
             self.segment_rects.append(self.rect)
@@ -163,6 +163,8 @@ class GrabcutSegmentator():
             key = cv2.waitKey(1)
 
             # key bindings
+            if key == ord("y"):
+                print()
             if key == ord("q"):
                 cv2.destroyWindow("Segments(press 'space' to refine segmentation)")
                 cv2.destroyWindow("annotation")

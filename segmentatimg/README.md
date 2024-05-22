@@ -36,7 +36,7 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
 
 ## 2- Two window is showed to user, one for color selecting other for painting segments.  
 * Color selecting window is used for selecting the segmentation color and displaying the painting mode. There are 2 paint modes other than default clicking actions. One is for continuously filling and other is unfilling. Both of them are activated and deactivated with double click on related mouse button.  
-* Painting are done in segmenting window. Left click fills the segment and right click unfills, Rapid filling and unfilling can be done with continuous modes. Middle button is used to make a cut, a line is cutted between consecutive middle button clicked points and cutted pixels are assigned to be new segments with new label. Also keyboard inputs are listened for various actions other than painting:  
+* Painting are done in segmenting window. Left click fills the segment and right click unfills, Rapid filling and unfilling can be done with continuous modes. Middle button is used to make a cut, a line is cutted between consecutive middle button clicked points and cutted pixels are assigned to be an edge. Also keyboard inputs are listened for various actions other than painting:  
   * q: quits the segmentation  
   * n: goes to next image in folder(no save)  
   * p: goes to previous image in folder(no save)  
