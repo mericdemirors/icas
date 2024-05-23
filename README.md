@@ -55,14 +55,14 @@ Sample cluster folder content:
   * perceptual loss, which is obtained by passing both the autoencoder models input and output to another feature extractor model(default is [torchvision VGG19](https://pytorch.org/vision/main/models/generated/torchvision.models.vgg19.html)). Then calculating the mean of features difference.
 
 #### 2- For each batch:  
-* image features(latent representations at the middle of the autoencoder) are obtained
+* image features are obtained from deep learning model
 * selected clustering model are created according to given parameters:
   * [Kmeans from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html)
   * [Agglomerative Clustering from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html), which is hierarchy
   * [DBSCAN from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)
   * [Gaussian Mixture from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html)
   * [HDBSCAN from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.HDBSCAN.html)
-* all models are evaluated and best model is selected according to three metrics(maximizing the silhouette and calinski_harabasz scores, minimizing the davies_bouldin score):
+* all models are evaluated after clustering image features and best model is selected according to three metrics(maximizing the silhouette and calinski_harabasz scores, minimizing the davies_bouldin score):
   * [silhouette_score from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.silhouette_score.html)
   * [davies_bouldin_score from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.davies_bouldin_score.html)
   * [calinski_harabasz_score from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.calinski_harabasz_score.html)
@@ -77,7 +77,7 @@ Sample cluster folder content:
 * representatives clustered with best model
 * cluster folders are merged according to their representatives belonging cluster
 
-In deep learning pipeline, main flow is preserved. Only the underlying structure for computations such as image feature extraction(done by extracting latent representation of images) and similarity calculation(done by clustering models) are changed.  
+In deep learning pipeline, main flow is preserved. Only the underlying structure for computations such as image feature extraction(done by feature extractor deep learning models) and similarity calculation(done by clustering models) are changed.  
 
 Main Flow(hard cornered item means a folder in computer, soft cornered item means a variable held storage during run time):  
 ![main_flow](images/main_flow.png)
