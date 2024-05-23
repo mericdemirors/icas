@@ -49,10 +49,10 @@ Sample cluster folder content:
 ### Deep Learning supported image clustering pipeline flow operates as follows:  
 
 #### 1- For whole dataset:  
-* If there ins't already a trained model Autoencoder model is trained with one of the following loss functions:  
+* If there ins't already a trained model deep learning model is trained with one of the following loss functions:  
   * [PyTorch MSELoss](https://pytorch.org/docs/stable/generated/torch.nn.MSELoss.html)  
   * [PyTorch L1Loss](https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html)  
-  * perceptual loss, which is obtained by passing both the autoencoder models input and output to another feature extractor model(default is [torchvision VGG19](https://pytorch.org/vision/main/models/generated/torchvision.models.vgg19.html)). Then calculating the mean of features difference.
+  * perceptual loss, which is obtained by passing both the deep learning models input and output to another feature extractor model(default is [torchvision VGG19](https://pytorch.org/vision/main/models/generated/torchvision.models.vgg19.html)). Then calculating the mean of features difference.
 
 #### 2- For each batch:  
 * image features are obtained from deep learning model
