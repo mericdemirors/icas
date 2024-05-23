@@ -20,7 +20,7 @@ class GrabcutSegmentator():
         """resetting GrabcutSegmentator object variables
         """
         self.paint_dict = None
-        self.thickness = 3
+        self.brush_size = 3
         self.rect = (0,0,0,0)                # rect x,y,w,h
         self.display_rects = []              # selected rectangles for displaying
         self.segment_rects = []              # selected rectangles for segmenting
@@ -80,18 +80,18 @@ class GrabcutSegmentator():
 
         # drawing annotation
         if self.currently_drawing:
-            cv2.circle(self.altered, (x,y), self.thickness, self.paint_dict["color"], -1)
+            cv2.circle(self.altered, (x,y), self.brush_size, self.paint_dict["color"], -1)
             self.image = self.altered.copy()
-            cv2.circle(self.mask, (x,y), self.thickness, self.paint_dict["val"], -1)
+            cv2.circle(self.mask, (x,y), self.brush_size, self.paint_dict["val"], -1)
 
-    # updates brush thickness
+    # updates brush size
     def on_trackbar_change(self, value:int):
-        """function to update brush thickness with window trackbar
+        """function to update brush size with window trackbar
 
         Args:
-            value (int): new thickness value
+            value (int): new size value
         """
-        self.thickness = value
+        self.brush_size = value
 
     # labels the segments and returns
     def get_segments(self):
@@ -154,7 +154,7 @@ class GrabcutSegmentator():
         cv2.namedWindow("Segments(press 'space' to refine segmentation)")
         cv2.namedWindow("Annotations", flags= cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.setMouseCallback("Annotations", self.annotation_event_listener)
-        cv2.createTrackbar("brush size","Annotations",self.thickness,100, self.on_trackbar_change)
+        cv2.createTrackbar("brush size","Annotations",self.brush_size,100, self.on_trackbar_change)
         cv2.moveWindow("Annotations", self.image.shape[1]+10,90)
         
         while True:
@@ -163,13 +163,11 @@ class GrabcutSegmentator():
             key = cv2.waitKey(1)
 
             # key bindings
-            if key == ord("y"):
-                print()
             if key == ord("q"):
                 cv2.destroyWindow("Segments(press 'space' to refine segmentation)")
                 cv2.destroyWindow("annotation")
                 raise(GrabcutSegmentatorQuitException("GrabcutSegmentator received key q for quitting"))
-            if key == ord("f"):
+            elif key == ord("f"):
                 cv2.destroyWindow("Segments(press 'space' to refine segmentation)")
                 cv2.destroyWindow("Annotations")
                 return self.get_segments()
@@ -201,5 +199,5 @@ class GrabcutSegmentator():
             self.display = self.original.copy()
             self.display[foreground == 0] = 0
 
-    def __call__(self, file_path):
+    def __call__(self, file_path:str):
         return self.segment(file_path)

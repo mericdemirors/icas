@@ -34,6 +34,13 @@ class NotMatchingAttentionAndMasksException(Exception):
     def __str__(self):
         return("Custom exception to signal for notifying caller object that given attentions and masks are not matching")
 
+class NotMatchingTemplateMatchingImages(Exception):
+    def __init__(self, message:str):
+        self.message = message
+        self.error_code = 1403
+    def __str__(self):
+        return("Custom exception to signal for notifying caller object that given template matching images are not matching")
+
 class InvalidMethodException(Exception):
     def __init__(self, message:str):
         self.message = message

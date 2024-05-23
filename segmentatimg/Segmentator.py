@@ -13,7 +13,7 @@ from helper_exceptions import *
 lock = Lock()
 
 class Segmentator:
-    def __init__(self:str, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),
+    def __init__(self, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"),
                  method:str="", templates_path="", attentions_path="", segments_path="", masks_path="", thread_range:int=10, template_threshold:float=None,
                  edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100, templateWindowSize:int=7, searchWindowSize:int=21,
                  h:int=10, hColor:int=10, region_size:int=40, ruler:int=30, k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100,
@@ -125,6 +125,8 @@ class Segmentator:
             raise(NotMatchingTemplatesAndSegmentsException("length of templates("+str(len(templates))+") and segments("+str(len(segments))+") are not matching"))
         if len(attentions) != len(masks):
             raise(NotMatchingAttentionAndMasksException("length of attentions("+str(len(attentions))+") and masks("+str(len(masks))+") are not matching"))
+        if (len(templates) != len(attentions)) or (len(segments) != len(masks)):
+            raise(NotMatchingTemplateMatchingImages("number of images provided for template matching are not matching"))
 
         valid_methods = ["edge", "superpixel", "kmeans", "slickmeans", "chanvase", "felzenszwalb", "quickshift", "graph", "grabcut", "SAM"]
         if self.method not in valid_methods:
@@ -266,7 +268,7 @@ class Segmentator:
             color_info['y'] = y
             color_info['clicked'] = True
 
-    # listens for user input
+    # displays color picker
     def display_color_picker(self, callback_info:dict, color_info:dict):
         """imshows color picker image and extra informations for user
 

@@ -6,7 +6,7 @@ from helper_exceptions import SAMPromptGenerationQuitException
 from segment_anything import SamPredictor, SamAutomaticMaskGenerator
 
 class SAMSegmentator():
-    def __init__(self, SAM, device:str="cpu", verbose=0):
+    def __init__(self, SAM, device:str="cpu", verbose: int=0):
         """initializing SAMSegmentator object
 
         Args:
@@ -22,7 +22,7 @@ class SAMSegmentator():
         self.reset()
 
     # resets SAMSegmentator attributes
-    def reset(self, verbose=0):
+    def reset(self, verbose: int=0):
         """resetting SAMSegmentator object variables
 
         Args:
@@ -37,7 +37,7 @@ class SAMSegmentator():
         self.ctrl_z_stack = []              # to store and reverse annotations
 
     # listens for user input
-    def annotation_event_listener(self, event, x:int, y:int, flags, param, verbose=0):
+    def annotation_event_listener(self, event, x:int, y:int, flags, param, verbose: int=0):
         """mouse callbacks for annotation types
 
         Args:
@@ -158,7 +158,7 @@ class SAMSegmentator():
         return final_mask
 
     # generated prompt with user input for prompted mask prediction
-    def generate_mask(self, image, verbose=0):
+    def generate_mask(self, image, verbose: int=0):
         """function to interactively generate SAM mask
 
         Args:
@@ -206,7 +206,6 @@ class SAMSegmentator():
                 self.reset()
                 self.image = self.altered = self.original.copy()
 
-
     # labels the image segments
     def label_the_segments(self, image, segment_value:int, start_id:int=1):
         """labels the seperate segments with ids
@@ -234,7 +233,7 @@ class SAMSegmentator():
         return image
 
     # labels the auto predictor sam output mask
-    def get_label_from_SAM_auto_output(self, SAM_auto_output, verbose=0):
+    def get_label_from_SAM_auto_output(self, SAM_auto_output, verbose: int=0):
         """creates labeled image from SAM output
 
         Args:
@@ -255,7 +254,7 @@ class SAMSegmentator():
         return labeled_image
     
     # labels the prompted predicted masks
-    def get_label_from_SAM_with_prompt_output_mask(self, SAM_with_prompt_output_mask, verbose=0):
+    def get_label_from_SAM_with_prompt_output_mask(self, SAM_with_prompt_output_mask, verbose: int=0):
         """creates labeled image from SAM output
 
         Args:
