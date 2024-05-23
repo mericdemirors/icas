@@ -13,7 +13,7 @@ from helper_functions import print_verbose
 from helper_exceptions import *
 
 class ModelTrainer():
-    def __init__(self, num_of_epochs: int, lr: float, batch_size: int, loss_type: str, dataset, model, device: str="cpu", ckpt_path: str=None, verbose: int=0):
+    def __init__(self, num_of_epochs: int, lr: float, batch_size: int, loss_type: str, dataset, model, loss_model=None, device: str="cpu", ckpt_path: str=None, verbose: int=0):
         """class to capsulate pytorch model and dataset
 
         Args:
@@ -21,6 +21,7 @@ class ModelTrainer():
             lr (float): learning rate
             batch_size (int): batch size for dataloader
             loss_type (str): loss function type to pass to get_criterion()
+            loss_model (pytorch model): model to use at perceptual loss
             dataset (pytorch dataset): pytorch dataset
             model (pytorch model): pytorch model
             device (str. optional): device to train on. Default is cpu
@@ -37,7 +38,7 @@ class ModelTrainer():
         self.model = model.to(self.device)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        self.criterion = self.get_criterion(loss_type)
+        self.criterion = self.get_criterion(loss_type, model=loss_model)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
         
         self.ckpt_path = ckpt_path
