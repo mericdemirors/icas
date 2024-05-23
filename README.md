@@ -1,6 +1,7 @@
 # Labelimg
 Tool for processing images
 
+
 ## Clusterimg
 Tool for clustering mixed images.
 
@@ -16,7 +17,7 @@ Process starts with folder full of mixed images:
   * imagehash: perceptual hash of image is used as feature, phash is calculated with [ImageHash library](https://pypi.org/project/ImageHash/)
   * ORB: images ORB features are used as feature. features are calculated with [ORB class from opencv](https://docs.opencv.org/4.x/db/d95/classcv_1_1ORB.html)
   * TM: images itself is used as feature
-* similarities intra-batch are calculated with selected methods similarity calculation:  
+* similarities are calculated with selected methods similarity calculation:  
   * SSIM: [structural_similarity from scikit-image](https://scikit-image.org/docs/stable/api/skimage.metrics.html#skimage.metrics.structural_similarity) is used
   * minhash: [jaccard from datasketch](http://ekzhu.com/datasketch/minhash.html) is used
   * imagehash: difference between 2 hash values are used.
@@ -44,7 +45,6 @@ All batch folders are merged in one resutl folder after second step:
 ![result folder](images/final_result.png)
 Sample cluster folder content:  
 ![mid result](images/result_cluster.png)
-
 
 ### Deep Learning supported image clustering pipeline flow operates as follows:  
 
