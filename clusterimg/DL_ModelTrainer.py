@@ -14,16 +14,16 @@ from helper_exceptions import *
 
 class ModelTrainer():
     def __init__(self, num_of_epochs: int, lr: float, batch_size: int, loss_type: str, dataset, model, loss_model=None, device: str="cpu", ckpt_path: str=None, verbose: int=0):
-        """class to capsulate pytorch model and dataset
+        """class to capsulate deep learning model and dataset
 
         Args:
             num_of_epochs (int): number of epochs for model training
             lr (float): learning rate
             batch_size (int): batch size for dataloader
             loss_type (str): loss function type to pass to get_criterion()
-            loss_model (pytorch model): model to use at perceptual loss
+            loss_model: model to use at perceptual loss
             dataset (pytorch dataset): pytorch dataset
-            model (pytorch model): pytorch model
+            model: deep learning model
             device (str. optional): device to train on. Default is cpu
             ckpt_path (str, optional): path to load model checkpoint, None means model is not trained. Defaults to None.
         """
@@ -56,7 +56,7 @@ class ModelTrainer():
 
         Args:
             loss_type (str, optional): indicates los function. Defaults to "mse".
-            model (pytorch model, optional): model to use at 'perceptual' loss type, None results in vgg19. Defaults to None.
+            model (model, optional): model to use at 'perceptual' loss type, None results in vgg19. Defaults to None.
 
         Returns:
             function: loss function
@@ -78,7 +78,7 @@ class ModelTrainer():
                 Args:
                     x (torch.tensor): first tensor
                     y (torch.tensor): second tensor
-                    model (pytorch model, optional): model to pass parameter tensors None results in vgg19. Defaults to model.
+                    model (model, optional): model to pass parameter tensors None results in vgg19. Defaults to model.
 
                 Returns:
                     torch.tensor: loss

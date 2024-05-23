@@ -107,7 +107,6 @@ class PowerOf2s256andAbove(nn.Module):
         x = x.view(x.size(0), -1)
         return x
     
-
 class PowerOf2s32to128(nn.Module):
     def __init__(self):
         super(PowerOf2s32to128, self).__init__()

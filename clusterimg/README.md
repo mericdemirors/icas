@@ -42,7 +42,7 @@ self.num_samples: length of dataset
 <br/><br/>
 
 # DL_Models
-Deep learning model to train. Custom models can be used as long as they contain below functions and attributes with same uses.
+Deep learning model to train. Custom models can be used as long as they contain below functions and attributes with same uses. Any type of model can be used, autoencoders are recommended for their unsupervised training benefit. Also pretrained feature extractor models as ResNets, GoogLeNets, VGGs and such can be used (without training) to teafure extraction if they are modified or encapulated with another model to have below functions and attributes with same uses. 
 
 ## Functions
 
