@@ -61,6 +61,8 @@ calls self.segment() function with given parameter.
 * original: original image
 * display: displayed image at 'Segments' window  
 
+<br/><br/>
+<br/><br/>
 
 # SAMSegmentator
 Interactive segmentation with [Meta's Segment Anything Model](https://github.com/facebookresearch/segment-anything).
@@ -149,6 +151,8 @@ calls self.segment() function with given parameter.
 * altered: image to store annotations
 * original: original image
 
+<br/><br/>
+<br/><br/>
 
 # Segmentator
 
