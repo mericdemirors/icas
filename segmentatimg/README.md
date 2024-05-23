@@ -3,13 +3,13 @@ Interactive segmentation with [opencv's grabcut](https://docs.opencv.org/4.x/d3/
 
 ## Functions
 
-### *__init__(self)*
+### * *__init__(self)*
 creates GrabcutSegmentator object and initializes the object attributes.
 
-### *reset(self)*
+### * *reset(self)*
 resets the updatable attributes.
 
-### *def annotation_event_listener(self, event, x:int, y:int, flags, param)*
+### * *def annotation_event_listener(self, event, x:int, y:int, flags, param)*
 listens for user mouse inputs for 'Annotations' window.
 * event: opencv event that is happening
 * x: column coordinate of mouse
@@ -19,16 +19,16 @@ listens for user mouse inputs for 'Annotations' window.
 
 Rectangle is drawn with mouse middle button. Rectangles will be attention area for the grabcut algorithm. Foreground and background annotations are done with left and right mouse click. Holding down the CTRL key turns them to probable foreground and background.
 
-### *def on_trackbar_change(self, value:int)*
+### * *def on_trackbar_change(self, value:int)*
 updates the brush size for mouse annotations with a slider at 'Annotations' window.
 * value: new value for brush size  
 
-### *def get_segments(self)*
+### * *def get_segments(self)*
 generates labeled segments from binary mask.  
 
 returns image with labeled segments
 
-### *def segment(self, file_path:str)*
+### * *def segment(self, file_path:str)*
 segments the passed image. Two window is displayed for user: 'Segments' and 'Annotations'. 'Segments' is for displaying the current segments of image to user. 'Annotations' is for displaying the current annotations to user.
 * file_path: path to image  
 
@@ -41,7 +41,7 @@ Four type of keyboard input is accepted during segmentation:
 returns image with labeled segments
 
 
-### *def __call__(self, file_path:str)*
+### * *def __call__(self, file_path:str)*
 calls self.segment() function with given parameter.
 * file_path: path to image  
 
@@ -74,13 +74,13 @@ Interactive segmentation with [Meta's Segment Anything Model](https://github.com
 
 ## Functions
 
-### *__init__(self, SAM, device:str="cpu", verbose: int=0)*
+### * *__init__(self, SAM, device:str="cpu", verbose: int=0)*
 creates SAMSegmentator object and initializes the object attributes.
 
-### *reset(self, verbose: int=0)*
+### * *reset(self, verbose: int=0)*
 resets the updatable attributes.
 
-### *annotation_event_listener(self, event, x:int, y:int, flags, param, verbose: int=0)*
+### * *annotation_event_listener(self, event, x:int, y:int, flags, param, verbose: int=0)*
 listens for user mouse inputs for 'Annotations' window.
 * event: opencv event that is happening
 * x: column coordinate of mouse
@@ -90,14 +90,14 @@ listens for user mouse inputs for 'Annotations' window.
 
 Rectangle is drawn with mouse middle button. Rectangles will be boxes for the SAM model with prompt. Foreground and background point annotations are done with left and right mouse click.
 
-### *draw_annotations(self, box_x:int=None, box_y:int=None, click_x:int=None, click_y:int=None, verbose: int=0)*
+### * *draw_annotations(self, box_x:int=None, box_y:int=None, click_x:int=None, click_y:int=None, verbose: int=0)*
 draws currently active annotations
 * box_x: x coords for newly annotated box annotation if there is any
 * box_y: y coords for newly annotated box annotation if there is any
 * click_x: x coords for newly annotated click annotation if there is any
 * click_y: y coords for newly annotated click annotation if there is any
 
-### *get_mask_from_prompt(self, image, prompt_boxes: list, prompt_coords: list, prompt_labels: list, verbose:int=0)*
+### * *get_mask_from_prompt(self, image, prompt_boxes: list, prompt_coords: list, prompt_labels: list, verbose:int=0)*
 predicts the masks with SamPredictor, then creates the segmented mask
 * image: image to predict over
 * prompt_boxes: box prompts for SamPredictor
@@ -107,7 +107,7 @@ Since multiple boxes with multiple points are not supported, each box is process
 
 returns generated mask
 
-### *generate_mask(self, image, verbose: int=0)*
+### * *generate_mask(self, image, verbose: int=0)*
 interactively creates SAM mask. Two window is displayed for user: 'Mask' and 'Annotations'. 'Mask' is for displaying the current segments of image to user and will be visible after first mask generation. 'Annotations' is for displaying the current annotations to user.
 * image: image to generate mask for
 Four type of keyboard input is accepted during segmentation:
@@ -120,7 +120,7 @@ Four type of keyboard input is accepted during segmentation:
 returns generated mask
 
 
-### *label_the_segments(self, image, segment_value:int, start_id:int=1)*
+### * *label_the_segments(self, image, segment_value:int, start_id:int=1)*
 generates labeled segments from mask.
 * image: mask to label
 * segment_value: value to search and label in the image
@@ -128,27 +128,27 @@ generates labeled segments from mask.
 
 returns image with labeled segments
 
-### *get_label_from_SAM_auto_output(self, SAM_auto_output, verbose: int=0)*
+### * *get_label_from_SAM_auto_output(self, SAM_auto_output, verbose: int=0)*
 creates labeled segments from SamAutomaticMaskGenerator
 * SAM_auto_output: output ofr the SamAutomaticMaskGenerator model  
 
 returns image with labeled segments
 
 
-### *get_label_from_SAM_with_prompt_output_mask(self, SAM_with_prompt_output_mask, verbose: int=0)*
+### * *get_label_from_SAM_with_prompt_output_mask(self, SAM_with_prompt_output_mask, verbose: int=0)*
 creates labeled segments from SamPredictor
 * SAM_auto_output: output ofr the SamPredictor model  
 
 returns image with labeled segments
 
 
-### *segment(self, image_path:str, verbose: int=0)*
+### * *segment(self, image_path:str, verbose: int=0)*
 calls the mask generation functions according to SAM model type
 * image_path: path to image  
 
 returns segmented image
 
-### *__call__(self, image_path:str)*
+### * *__call__(self, image_path:str)*
 calls self.segment() function with given parameter.
 * image_path: path to image  
 
@@ -180,7 +180,7 @@ returns segmented image
 
 ## Functions
 
-### *__init__(self, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), method:str="", templates_path="", attentions_path="", segments_path="", masks_path="", thread_range:int=10, template_threshold:float=None, edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100, templateWindowSize:int=7, searchWindowSize:int=21, h:int=10, hColor:int=10, region_size:int=40, ruler:int=30, k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100, sigma:float=0.5, min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, SAMSegmentator=None, verbose:int=0)*
+### * *__init__(self, image_folder:str, color_picker_image_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ColorPicker.png"), method:str="", templates_path="", attentions_path="", segments_path="", masks_path="", thread_range:int=10, template_threshold:float=None, edge_th:int=60, bilateral_d:int=7, sigmaColor:int=100, sigmaSpace:int=100, templateWindowSize:int=7, searchWindowSize:int=21, h:int=10, hColor:int=10, region_size:int=40, ruler:int=30, k:int=15, color_importance:int=5, number_of_bins:int=20, segment_scale:int=100, sigma:float=0.5, min_segment_size:int=100, segment_size:int=100, color_weight:float=0.5, SAMSegmentator=None, verbose:int=0)*
 creates Segmentator object and initializes the object attributes.
 * image_folder: path to images
 * color_picker_image_path: path to color picking image
@@ -212,12 +212,12 @@ creates Segmentator object and initializes the object attributes.
 * SAMSegmentator: SAMSegmentator object for SAM method
 
 
-### *__str__(self)*
+### * *__str__(self)*
 to string method  
 
-returns string
+returns explanatory string
 
-### *arguman_check(self, templates:list, attentions:list, segments:list, masks:list, verbose:int=0)*
+### * *arguman_check(self, templates:list, attentions:list, segments:list, masks:list, verbose:int=0)*
 checks arguman validity. Ensures number of images are same, passed method is valid and color_picker_image exists
 * templates: template files for template matching
 * attentions: attention files for template matching
@@ -225,22 +225,22 @@ checks arguman validity. Ensures number of images are same, passed method is val
 * masks: mask files for template matching
 
 
-### *empty_images(self)*
+### * *empty_images(self)*
 empties the image attributes
 
-### *reset_images(self)*
+### * *reset_images(self)*
 resets the image attributes
 
-### *set_images(self, raw_image, orig_segmented_image)*
+### * *set_images(self, raw_image, orig_segmented_image)*
 sets the image attributes
 * raw_image: nonprocessed image
 * orig_segmented_image: nonprocessed segmented image
 
-### *display_images(self, file_no:int)*
+### * *display_images(self, file_no:int)*
 refreshs image displays
 * file_no: index of image
 
-### *click_event_listener(self, event, x:int, y:int, flags, callback_info:dict)*
+### * *click_event_listener(self, event, x:int, y:int, flags, callback_info:dict)*
 listens for user mouse inputs for 'Processed Image' window.
 * event: opencv event that is happening
 * x: column coordinate of mouse
@@ -248,7 +248,7 @@ listens for user mouse inputs for 'Processed Image' window.
 * flags: opencv flags
 * callback_info: dictionary to store user input info
 
-### *color_event_listener(self, event, x:int, y:int, flags, color_info:dict)*
+### * *color_event_listener(self, event, x:int, y:int, flags, color_info:dict)*
 listens for user mouse inputs for 'Color Picker' window.
 * event: opencv event that is happening
 * x: column coordinate of mouse
@@ -256,24 +256,24 @@ listens for user mouse inputs for 'Color Picker' window.
 * flags: opencv flags
 * callback_info: dictionary to store user input info
 
-### *display_color_picker(self, callback_info:dict, color_info:dict)*
+### * *display_color_picker(self, callback_info:dict, color_info:dict)*
 displays color picker image and shows mode information
 * callback_info: dictionary to store user input info
 * color_info: dictionary to store user input info
 
-### *create_thread(self, file_no:int, verbose:int=0)*
+### * *create_thread(self, file_no:int, verbose:int=0)*
 creates new thread to process the upcoming images. Image segmentation processes are done in the background if possible to prepare upcoming images
 * file_no: index of image  
 
 returns created thread
 
-### *save_masks(self, mask_path:str, result_image, painted_pixels, verbose:int=0)*
+### * *save_masks(self, mask_path:str, result_image, painted_pixels, verbose:int=0)*
 saves masks according to paint color
 * mask_path: incomplate path to save masks
 * result_image: painted image
 * painted_pixels: image to store which pixels are painted
 
-### *process_keyboard_input(self, file_no:int, ctrl_z_stack:list, key, verbose:int=0)*
+### * *process_keyboard_input(self, file_no:int, ctrl_z_stack:list, key, verbose:int=0)*
 processes keyboard input.
 * file_no: index of image
 * ctrl_z_stack: stack to reverse the last annotation
@@ -290,14 +290,14 @@ Eight different inputs are accepted:
 
 returns action corresponding to keyboard input
 
-### *process_color_picker_input(self, color_info:dict, previous_color)*
+### * *process_color_picker_input(self, color_info:dict, previous_color)*
 processes input to get color 
 * color_info: user input info
 * previous_color: previous selected color  
 
 returns selected color
 
-### *take_action(self, ctrl_z_stack:list, color, callback_info:dict, action_type:str="")*
+### * *take_action(self, ctrl_z_stack:list, color, callback_info:dict, action_type:str="")*
 applies selected action
 * ctrl_z_stack: stack to reverse last annotation
 * color: selected color
@@ -316,22 +316,22 @@ There are five actions(only template action covered in take_action() function, o
 * save: saves image and passes to next image
 * template: applies template matching
 
-### *manual_segmenting(self, file_no:int, verbose:int=0)*
+### * *manual_segmenting(self, file_no:int, verbose:int=0)*
 function to capsulate manual segmentation process. Two window is displayed for user: 'Processed Image' and 'Color Picker'. 'Processed Image' is for displaying the current segments of image to user. 'Color Picker' is for picking the painting color. Also two additional window named 'Segmented Image' and 'Painted Pixels' for debug purposes can be toggled on and off.
 * file_no: index of image  
 
 returns action
 
-### *process(self, verbose:int=0)*
+### * *process(self, verbose:int=0)*
 function to capsulate all segmentation process.
 
-### *grabcut_process(self, verbose:int=0)*
+### * *grabcut_process(self, verbose:int=0)*
 function to capsulate all segmentation process, specialized to grabcut since grabcut doesnt run with threads.
 
-### *SAM_process(self, verbose:int=0)*
+### * *SAM_process(self, verbose:int=0)*
 function to capsulate all segmentation process, specialized to SAM since SAM doesnt run with threads.
 
-### *__call__(self)*
+### * *__call__(self)*
 calls process() functions, and catches exceptions to close threads before terminating
 
 ## Attributes
