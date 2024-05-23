@@ -435,9 +435,6 @@ class Segmentator:
             color (list): values of selected color
             callback_info (dictionary): contains selected action information
             action_type (str): action to take
-
-        Returns:
-            tuple: previous result and painted pixel images
         """
         ctrl_z_stack.append((self.result_image.copy(), self.segmented_image.copy(), self.painted_pixels.copy()))
         

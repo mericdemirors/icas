@@ -24,7 +24,9 @@ updates the brush size for mouse annotations with a slider at 'Annotations' wind
 * value: new value for brush size  
 
 ### *def get_segments(self)*
-generates labeled segments from binary mask.
+generates labeled segments from binary mask.  
+
+returns image with labeled segments
 
 ### *def segment(self, file_path:str)*
 segments the passed image. Two window is displayed for user: 'Segments' and 'Annotations'. 'Segments' is for displaying the current segments of image to user. 'Annotations' is for displaying the current annotations to user.
@@ -34,7 +36,10 @@ Four type of keyboard input is accepted during segmentation:
 * q: quits the segmentation by raising a 'GrabcutSegmentatorQuitException'
 * f: finishes the segmentation and returns the labeled segments of image
 * r: resets the all attributes
-* space: runs grabcut algorithm once with current annotations. Multiple runs can be needed for convergence
+* space: runs grabcut algorithm once with current annotations. Multiple runs can be needed for convergence  
+
+returns image with labeled segments
+
 
 ### *def __call__(self, file_path:str)*
 calls self.segment() function with given parameter.
@@ -98,7 +103,9 @@ predicts the masks with SamPredictor, then creates the segmented mask
 * prompt_boxes: box prompts for SamPredictor
 * prompt_coords: coord prompts for SamPredictor
 * prompt_labels: label prompts for SamPredictor
-Since multiple boxes with multiple points are not supported, each box is processed with its related coords and then all generated masks are merged into one
+Since multiple boxes with multiple points are not supported, each box is processed with its related coords and then all generated masks are merged into one  
+
+returns generated mask
 
 ### *generate_mask(self, image, verbose: int=0)*
 interactively creates SAM mask. Two window is displayed for user: 'Mask' and 'Annotations'. 'Mask' is for displaying the current segments of image to user and will be visible after first mask generation. 'Annotations' is for displaying the current annotations to user.
@@ -108,29 +115,44 @@ Four type of keyboard input is accepted during segmentation:
 * space: generated segmentation
 * f: finishes the segmentation and returns the labeled segments of image
 * z: reverses the last annotation
-* r: resets the annotations
+* r: resets the annotations  
+
+returns generated mask
+
 
 ### *label_the_segments(self, image, segment_value:int, start_id:int=1)*
 generates labeled segments from mask.
 * image: mask to label
 * segment_value: value to search and label in the image
-* start_id: starting value for segment labeling
+* start_id: starting value for segment labeling  
+
+returns image with labeled segments
 
 ### *get_label_from_SAM_auto_output(self, SAM_auto_output, verbose: int=0)*
 creates labeled segments from SamAutomaticMaskGenerator
-* SAM_auto_output: output ofr the SamAutomaticMaskGenerator model
+* SAM_auto_output: output ofr the SamAutomaticMaskGenerator model  
+
+returns image with labeled segments
+
 
 ### *get_label_from_SAM_with_prompt_output_mask(self, SAM_with_prompt_output_mask, verbose: int=0)*
 creates labeled segments from SamPredictor
-* SAM_auto_output: output ofr the SamPredictor model
+* SAM_auto_output: output ofr the SamPredictor model  
+
+returns image with labeled segments
+
 
 ### *segment(self, image_path:str, verbose: int=0)*
 calls the mask generation functions according to SAM model type
 * image_path: path to image  
 
+returns segmented image
+
 ### *__call__(self, image_path:str)*
 calls self.segment() function with given parameter.
 * image_path: path to image  
+
+returns segmented image
 
 ## Attributes
 * SAM: SAM model
@@ -191,7 +213,9 @@ creates Segmentator object and initializes the object attributes.
 
 
 ### *__str__(self)*
-to string method
+to string method  
+
+returns string
 
 ### *arguman_check(self, templates:list, attentions:list, segments:list, masks:list, verbose:int=0)*
 checks arguman validity. Ensures number of images are same, passed method is valid and color_picker_image exists
@@ -239,7 +263,9 @@ displays color picker image and shows mode information
 
 ### *create_thread(self, file_no:int, verbose:int=0)*
 creates new thread to process the upcoming images. Image segmentation processes are done in the background if possible to prepare upcoming images
-* file_no: index of image
+* file_no: index of image  
+
+returns created thread
 
 ### *save_masks(self, mask_path:str, result_image, painted_pixels, verbose:int=0)*
 saves masks according to paint color
@@ -260,12 +286,16 @@ Eight different inputs are accepted:
 * z: reverses the last annotation
 * r: resets the all attributes
 * d: opens debug mode to show image segmentation in 'Segmented Image' window and painted pixels in 'Painted Pixels' window
-* t: applies template matching
+* t: applies template matching  
+
+returns action corresponding to keyboard input
 
 ### *process_color_picker_input(self, color_info:dict, previous_color)*
 processes input to get color 
 * color_info: user input info
-* previous_color: previous selected color
+* previous_color: previous selected color  
+
+returns selected color
 
 ### *take_action(self, ctrl_z_stack:list, color, callback_info:dict, action_type:str="")*
 applies selected action
@@ -288,7 +318,9 @@ There are five actions(only template action covered in take_action() function, o
 
 ### *manual_segmenting(self, file_no:int, verbose:int=0)*
 function to capsulate manual segmentation process. Two window is displayed for user: 'Processed Image' and 'Color Picker'. 'Processed Image' is for displaying the current segments of image to user. 'Color Picker' is for picking the painting color. Also two additional window named 'Segmented Image' and 'Painted Pixels' for debug purposes can be toggled on and off.
-* file_no: index of image
+* file_no: index of image  
+
+returns action
 
 ### *process(self, verbose:int=0)*
 function to capsulate all segmentation process.
