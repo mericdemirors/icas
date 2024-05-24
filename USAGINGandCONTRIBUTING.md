@@ -101,3 +101,12 @@ sg()
 * 4- Than add a new Segmentator.process() function since methods requiring user input doesn't run on threads
 * 5- add your segmentation function above the helper_functions.segment_image() function. Pay attention to match your segmentation functions output with current methods output format: two dimensional numpy.ndarray with shape equal to original images shape[:2]. edges are indicated with value 0 and segments are labeled starting from 1
 * 6- add your function to helper_functions.segment_image() function with needed parameters
+
+# To user attention:
+Below libraries are not installed with labelimg since aim for __labelimg__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
+```python
+pip install torch
+pip install torchvision
+pip install scikit-learn
+pip install git+https://github.com/facebookresearch/segment-anything.git
+```

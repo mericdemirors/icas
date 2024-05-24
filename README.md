@@ -170,3 +170,15 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
       ![Sample segment](images/template/segment.png)  
       Sample mask(means only white pixels will be painted):  
       ![Sample mask](images/template/mask.png)  
+
+<br/><br/>
+<br/><br/>
+
+# To user attention:
+Below libraries are not installed with labelimg since aim for __labelimg__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
+```python
+pip install torch
+pip install torchvision
+pip install scikit-learn
+pip install git+https://github.com/facebookresearch/segment-anything.git
+```
