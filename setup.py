@@ -1,9 +1,13 @@
 from setuptools import setup, find_packages
 
+with open("usage.md", "r") as f:
+    usage_desc = f.read()
+
 setup(
     name="labelimg",
     version="1.0",
     packages=find_packages(),
+    description="Tool for labeling images"
     install_requires=[
         "numpy>=1.26.4",
         "opencv_contrib_python>=4.9.0.80", # be careful about other opencv libraries on your device
@@ -19,4 +23,8 @@ setup(
         # "torchvision>=0.18.0",
         # "segment-anything>=1.0"
     ],
-)
+    long_description=usage_desc,
+    long_description_content_type="text/markdown",
+    author="mericdemirors",
+    author_email="demirorsmeric@gmail.com",
+    url="https://github.com/mericdemirors/labelimg")
