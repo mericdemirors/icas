@@ -213,7 +213,7 @@ creates Segmentator object and initializes the object attributes.
   * chanvase: [scikit-image's chan vese](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.chan_vese), second slowest method
   * felzenszwalb: [scikit-image's felzenszwalb](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.felzenszwalb), third fastest method, performance can vary with parameters
   * quickshift: [scikit-image's quickshift](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.quickshift), third slowest method
-  * graph: [opencv's graph segmentation](https://docs.opencv.org/4.x/dd/d19/classcv_1_1ximgproc_1_1segmentation_1_1GraphSegmentation.html), fasters method
+  * graph: [opencv's graph segmentation](https://docs.opencv.org/4.x/dd/d19/classcv_1_1ximgproc_1_1segmentation_1_1GraphSegmentation.html), fastest method
   * grabcut: [opencv's grabcut](https://docs.opencv.org/4.x/d3/d47/group__imgproc__segmentation.html#ga909c1dda50efcbeaa3ce126be862b37f), speed can vary because of the user annotation but one the best
   * SAM: [Meta's Segment Anything Model](https://github.com/facebookresearch/segment-anything), speed can vary depending on the device but one of the best
 
