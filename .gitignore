@@ -1,3 +1,6 @@
 __pycache__
 test_images*
 here*
+build
+dist
+labelimg/labelimg.egg-info
