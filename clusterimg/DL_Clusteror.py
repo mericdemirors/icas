@@ -144,7 +144,7 @@ class DL_Clusteror():
             verbose (int, optional): verbose level. Defaults to 0.
 
         Returns:
-            sklearn clusterin model: model with best evaluation score
+            sklearn clustering model: model with best evaluation score
         """
         if len(models) == 1:
             return models[0]

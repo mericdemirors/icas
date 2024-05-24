@@ -1,5 +1,5 @@
 # Labelimg
-Tool for processing images
+Tool for labeling images
 
 <br/><br/>
 <br/><br/>
