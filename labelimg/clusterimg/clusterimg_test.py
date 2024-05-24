@@ -1,12 +1,11 @@
 import os
 import shutil
 
-from helper_functions import generate_test_dataset
-from helper_exceptions import FinishException
-from Clusteror import Clusteror
+from .helper_functions import generate_test_dataset
+from .helper_exceptions import FinishException
+from .Clusteror import Clusteror
 
-
-def test():
+def clusterimg_test():
     test_path = os.path.join(os.path.split(os.path.dirname(os.path.abspath(__file__)))[0], "test_images")
 
     for method in ["SSIM", "TM", "imagehash", "minhash", "ORB"]:
@@ -36,4 +35,4 @@ def test():
             print(f"Test passed for {method} with {transfer}.")
 
 if __name__ == "__main__":
-    test()
+    clusterimg_test()

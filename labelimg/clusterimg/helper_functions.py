@@ -14,8 +14,8 @@ from tqdm.auto import tqdm
 from datasketch import MinHash
 from skimage.metrics import structural_similarity
 
-from helper_exceptions import *
-from global_variables import GLOBAL_THREADS
+from .helper_exceptions import *
+from .global_variables import GLOBAL_THREADS
 
 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 

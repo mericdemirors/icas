@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 from skimage.morphology import flood_fill
 
-from helper_exceptions import SAMPromptGenerationQuitException
 from segment_anything import SamPredictor, SamAutomaticMaskGenerator
+
+from .helper_exceptions import SAMPromptGenerationQuitException
 
 class SAMSegmentator():
     def __init__(self, SAM, device:str="cpu", verbose: int=0):

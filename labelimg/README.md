@@ -26,8 +26,9 @@ Process starts with folder full of mixed images:
   * ORB: ratio of good matches over all matches are used
   * TM: minimum error at [template matching from opencv](https://docs.opencv.org/4.x/df/dfb/group__imgproc__object.html#ga586ebfb0a7fb604b35a23d85391329be) is used
 
-  Two image with similarity score bigger than threshold is considered similar, threshold can be given as parameter or interactively selected from set of computations over small data sample. Y axis is threshold value and X axis is the number of expected similar pairs at corresponding threshold value. Approximate number of clustered image is calculated and displayed when a threshold value is hovered:    
-  ![th_selection](images/th_select.png)
+  Two image with similarity score bigger than threshold is considered similar, threshold can be given as parameter or interactively selected from set of computations over small data sample. Y axis is threshold value and X axis is the number of expected similar pairs at corresponding threshold value. Approximate number of clustered image is calculated and displayed when a threshold value is hovered:  
+  ![th_selection](images/th_select.png)  
+  (Interactive selection can be problematic on notebooks or different backend GUIs)
 * similar images are clustered with "If and X and Y image are similar, they are putted into same cluster. If any X and Y image has an image chain X-A-B-...-N-Y that has consecutive pair similarities, they are putted into same cluster." logic
 * all clusters + outliers are writed into batch's folder  
 
@@ -140,7 +141,7 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
 ### 2- Two window is showed to user, one for color selecting other for painting segments.  
 * Color selecting window is used for selecting the segmentation color and displaying the painting mode. There are two paint modes other than default clicking actions. One is for continuously filling and other is unfilling. Both of them are activated and deactivated with double click on related mouse button.  
   Sample image "jet1.jpg":  
-  ![Sample image "jet1.jpg"](images/jet1.jpg)  
+  ![Sample image "jet1.jpg"](images/jet_images/jet1.jpg) 
   Segments for "jet1.jpg" using superpixel(selected method and its parameters should be selected for better segments, this is only for explanatory purposes[black lines around red painted area are edge annotations, originally not included in segments]):  
   ![Segments for "jet1.jpg"](images/normal_segmentation/seg.png)  
   Painted image:  

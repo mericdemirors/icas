@@ -8,9 +8,9 @@ import numpy as np
 import mplcursors
 import matplotlib.pyplot as plt
 
-from helper_functions import cluster, similarity_methods, calculate_similarity, print_verbose, thread_this, save_checkpoint, image_transfer, write_clusters, get_image_features
-from helper_exceptions import *
-from global_variables import GLOBAL_THREADS, GLOBAL_THRESHOLD
+from .helper_functions import cluster, similarity_methods, calculate_similarity, print_verbose, thread_this, save_checkpoint, image_transfer, write_clusters, get_image_features
+from .helper_exceptions import *
+from .global_variables import GLOBAL_THREADS, GLOBAL_THRESHOLD
 
 class Clusteror():
     def __init__(self, images_folder_path: str, method: str, batch_size: int, threshold: float=None,

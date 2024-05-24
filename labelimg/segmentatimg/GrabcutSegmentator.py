@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from skimage.morphology import flood_fill
 
-from helper_exceptions import *
+from .helper_exceptions import *
 
 class GrabcutSegmentator():
     def __init__(self):

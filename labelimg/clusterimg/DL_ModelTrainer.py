@@ -9,8 +9,8 @@ import torch.optim as optim
 import torchvision.models as models
 from torch.utils.data import DataLoader, Subset
 
-from helper_functions import print_verbose
-from helper_exceptions import *
+from .helper_functions import print_verbose
+from .helper_exceptions import *
 
 class ModelTrainer():
     def __init__(self, num_of_epochs: int, lr: float, batch_size: int, loss_type: str, dataset, model, loss_model=None, device: str="cpu", ckpt_path: str=None, verbose: int=0):

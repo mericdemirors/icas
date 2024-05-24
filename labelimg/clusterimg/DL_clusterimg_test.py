@@ -2,16 +2,15 @@ import os
 import shutil
 import time
 
-from helper_functions import generate_test_dataset
-
 import torch
 
-from DL_Datasets import *
-from DL_Models import *
-from DL_ModelTrainer import ModelTrainer
-from DL_Clusteror import DL_Clusteror
+from .helper_functions import generate_test_dataset
+from .DL_Datasets import *
+from .DL_Models import *
+from .DL_ModelTrainer import ModelTrainer
+from .DL_Clusteror import DL_Clusteror
 
-def test():
+def DL_clusterimg_test():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     device = "cpu" # for tesy purposes
     test_path = os.path.join(os.path.split(os.path.dirname(os.path.abspath(__file__)))[0], "test_images")
@@ -109,4 +108,4 @@ def test():
             print(f"Test passed for {method} with {loss}.")
 
 if __name__ == "__main__":
-    test()
+    DL_clusterimg_test()

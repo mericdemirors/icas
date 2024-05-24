@@ -5,8 +5,8 @@ import numpy as np
 from skimage.morphology import flood_fill, flood
 from skimage.segmentation import chan_vese, felzenszwalb, quickshift
 
-from GrabcutSegmentator import GrabcutSegmentator
-from helper_exceptions import *
+from .GrabcutSegmentator import GrabcutSegmentator
+from .helper_exceptions import *
 
 # edge segmentation
 def edge_segmentation(image_path:str, edge_th:int, bilateral_d:int, sigmaColor:int, sigmaSpace:int, templateWindowSize:int,

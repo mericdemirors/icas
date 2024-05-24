@@ -7,8 +7,8 @@ import cv2
 import numpy as np
 from skimage.morphology import flood
 
-from helper_functions import segment_image, print_verbose, fill, unfill, put_template_segments
-from helper_exceptions import *
+from .helper_functions import segment_image, print_verbose, fill, unfill, put_template_segments
+from .helper_exceptions import *
 
 lock = Lock()
 
