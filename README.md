@@ -1,6 +1,8 @@
 # Labelimg
 Tool for processing images
 
+<br/><br/>
+<br/><br/>
 
 ## Clusterimg
 Tool for clustering mixed images.
@@ -20,9 +22,9 @@ Process starts with folder full of mixed images:
 * similarities are calculated with selected methods similarity calculation:  
   * SSIM: [structural_similarity from scikit-image](https://scikit-image.org/docs/stable/api/skimage.metrics.html#skimage.metrics.structural_similarity) is used
   * minhash: [jaccard from datasketch](http://ekzhu.com/datasketch/minhash.html) is used
-  * imagehash: difference between 2 hash values are used.
+  * imagehash: difference between two hash values are used.
   * ORB: ratio of good matches over all matches are used
-  * TM: minimum matching error is used
+  * TM: minimum error at [template matching from opencv](https://docs.opencv.org/4.x/df/dfb/group__imgproc__object.html#ga586ebfb0a7fb604b35a23d85391329be) is used
 
   Two image with similarity score bigger than threshold is considered similar, threshold can be given as parameter or interactively selected from set of computations over small data sample. Y axis is threshold value and X axis is the number of expected similar pairs at corresponding threshold value. Approximate number of clustered image is calculated and displayed when a threshold value is hovered:    
   ![th_selection](images/th_select.png)
@@ -87,6 +89,8 @@ Main Flow(hard cornered item means a folder in computer, soft cornered item mean
 * C/C++ optimizations
 * CUDA optimizations
 
+<br/><br/>
+<br/><br/>
 
 ## Segmentatimg 
 Tool for interactively segmentating images. Main image segmenting pipeline flow operates as follows:  

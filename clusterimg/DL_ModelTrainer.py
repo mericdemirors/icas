@@ -103,7 +103,7 @@ class ModelTrainer():
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
         
         for epoch in range(self.num_of_epochs):
-            for (paths, images) in tqdm(dataloader, desc=f"Training {self.model_serial_path}", leave=False):
+            for (paths, images) in tqdm(dataloader, desc=f"Training {self.model_serial_path} on epoch {epoch}", leave=False):
                 images = images.to(self.device)
                 outputs = self.model(images)
                 loss = self.criterion(images, outputs)
