@@ -205,7 +205,18 @@ returns segmented image
 creates Segmentator object and initializes the object attributes.
 * image_folder: path to images
 * color_picker_image_path: path to color picking image
-* method: segmentation method
+* method: segmentation method selected from one of below methods. Suitable method and its parameters can be tested with preview_methods() function before hand:
+  * edge: image is divided with edges using opencv's operations, fourth fastest method because of image preprocesses before edge detection, good on sharp edged images
+  * superpixel: [opencv's superpixel](https://docs.opencv.org/4.x/df/d6c/group__ximgproc__superpixel.html#ga503d462461962668b3bffbf2d7b72038), second fastest method, performance can vary with parameters
+  * kmeans: [opencv's kmeans](https://docs.opencv.org/4.x/d5/d38/group__core__cluster.html#ga9a34dc06c6ec9460e90860f15bcd2f88), slowest method, performance can vary with parameters
+  * slickmeans: first opencv's superpixel, than opencv's kmeans is applied, fifth fastest method
+  * chanvase: [scikit-image's chan vese](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.chan_vese), second slowest method
+  * felzenszwalb: [scikit-image's felzenszwalb](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.felzenszwalb), third fastest method, performance can vary with parameters
+  * quickshift: [scikit-image's quickshift](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.quickshift), third slowest method
+  * graph: [opencv's graph segmentation](https://docs.opencv.org/4.x/dd/d19/classcv_1_1ximgproc_1_1segmentation_1_1GraphSegmentation.html), fasters method
+  * grabcut: [opencv's grabcut](https://docs.opencv.org/4.x/d3/d47/group__imgproc__segmentation.html#ga909c1dda50efcbeaa3ce126be862b37f), speed can vary because of the user annotation but one the best
+  * SAM: [Meta's Segment Anything Model](https://github.com/facebookresearch/segment-anything), speed can vary depending on the device but one of the best
+
 * templates: path to folder of templates to search in raw images
 * attentions: path to folder of template masks to where to pay attention, will be derived from templates if not provided
 * segments: path to folder of segments to paint detected templates

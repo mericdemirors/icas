@@ -21,11 +21,11 @@
 initializing Clusteror object
 * images_folder_path: path to image folder
 * method: method to use at clustering
-  * SSIM: [structural_similarity from scikit-image](https://scikit-image.org/docs/stable/api/skimage.metrics.html#skimage.metrics.structural_similarity) is used
-  * minhash: [jaccard from datasketch](http://ekzhu.com/datasketch/minhash.html) is used
-  * imagehash: difference between [ImageHash library](https://pypi.org/project/ImageHash/) hashes are used
-  * ORB: ratio of good matches at [ORB class from opencv](https://docs.opencv.org/4.x/db/d95/classcv_1_1ORB.html) features over all matches are used
-  * TM: minimum error at [template matching from opencv](https://docs.opencv.org/4.x/df/dfb/group__imgproc__object.html#ga586ebfb0a7fb604b35a23d85391329be) is used
+  * SSIM: [structural_similarity from scikit-image](https://scikit-image.org/docs/stable/api/skimage.metrics.html#skimage.metrics.structural_similarity) is used, slow but good at steady angle complicated shots
+  * minhash: [jaccard from datasketch](http://ekzhu.com/datasketch/minhash.html) is used, fasters method with average performance at all cases
+  * imagehash: difference between [ImageHash library](https://pypi.org/project/ImageHash/) hashes are used, mid speed and good at small images
+  * ORB: ratio of good matches at [ORB class from opencv](https://docs.opencv.org/4.x/db/d95/classcv_1_1ORB.html) features over all matches are used, slow and hard to find good use case
+  * TM: minimum error at [template matching from opencv](https://docs.opencv.org/4.x/df/dfb/group__imgproc__object.html#ga586ebfb0a7fb604b35a23d85391329be) is used, slow and hard to find good use case
 * batch_size: batch size at similarity check
 * threshold: threshold to consider a pair similar
 * num_of_threads: threads to run similarity calculations
