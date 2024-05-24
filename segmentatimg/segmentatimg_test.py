@@ -8,7 +8,7 @@ from .helper_functions import preview_methods
 
 def segmentatimg_test():
     current_dir = os.path.dirname(__file__)
-    image_path = os.path.join(os.sep.join(current_dir.split(os.sep)[:5]), "images", "jet_images", "jet1.jpg")
+    image_path = os.path.join(os.sep.join(current_dir.split(os.sep)[:4]), "images", "jet_images", "jet1.jpg")
     preview_methods(image_path)
     
     downloads_path = os.path.join(os.sep.join(current_dir.split(os.sep)[:3]), "Downloads")
