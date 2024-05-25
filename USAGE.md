@@ -15,9 +15,9 @@ import labelimg.clusterimg.DL_clusterimg_test as dl_ct
 dl_ct()
 ```
 
-### * Segmentatimg test
+### * Segmentimg test
 ```python
-import labelimg.segmentatimg.segmentatimg_test as st
+import labelimg.segmentimg.segmentimg_test as st
 st()
 ```
 
@@ -57,9 +57,9 @@ dlc = DL_Clusteror(model_trainer=mt, method=method, batch_size=100, overwrite=Tr
 dlc()
 ```
 
-### * Segmentatimg
+### * Segmentimg
 ```python
-from labelimg.segmentatimg.Segmentator import  Segmentator
+from labelimg.segmentimg.Segmentator import  Segmentator
 
 test_path = "path/to/images"
 method = "graph"

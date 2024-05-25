@@ -93,7 +93,7 @@ Main Flow(hard cornered item means a folder in computer, soft cornered item mean
 <br/><br/>
 <br/><br/>
 
-## Segmentatimg 
+## Segmentimg 
 Tool for interactively segmentating images. Main image segmenting pipeline flow operates as follows:  
 
 ### 1- image is divided into segments with one of these methods. Segmented image will have labeled segments starting from 1(also edges with value of 0 if any):

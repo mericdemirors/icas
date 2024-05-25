@@ -6,7 +6,7 @@ from .SAMSegmentator import SAMSegmentator
 
 from .helper_functions import preview_methods
 
-def segmentatimg_test():
+def segmentimg_test():
     current_dir = os.path.dirname(__file__)
     image_path = os.path.join(os.sep.join(current_dir.split(os.sep)[:4]), "images", "jet_images", "jet1.jpg")
     preview_methods(image_path)
@@ -24,4 +24,4 @@ def segmentatimg_test():
     sgmt()
 
 if __name__ == "__main__":
-    segmentatimg_test()
+    segmentimg_test()

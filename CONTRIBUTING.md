@@ -23,7 +23,7 @@
 * 5- write a fit_predict() function to your model for fitting the passed data and returning the predicted labels for them. Pay attention to matching your clustering models fit_predict() output with current models output format: numpy.ndarray of shape (n_samples,)
 * 6- do the needed imports
 
-## * adding new method to Segmentatimg
+## * adding new method to Segmentimg
 
 #### automatic method:
 * 1- add needed parameters to Segmentator.\_\_init\_\_()

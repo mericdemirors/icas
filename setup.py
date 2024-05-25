@@ -4,8 +4,8 @@ with open("USAGE.md", "r") as f:
     usage_desc = f.read()
 
 setup(
-    name="labelimg",
-    version="1.1",
+    name="label-img",
+    version="1.0",
     packages=find_packages(),
     description="Tool for labeling images",
     install_requires=[
