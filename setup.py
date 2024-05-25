@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-with open("USAGINGandCONTRIBUTING.md", "r") as f:
+with open("USINGandCONTRIBUTING.md", "r") as f:
     usage_desc = f.read()
 
 setup(
