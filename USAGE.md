@@ -3,19 +3,19 @@ Tool for clustering and segmenting image datasets. Detailed descriptions for pac
 
 # Test the whole system pipeline with:
 
-### * Clusterimg test
+### * clusterimg test
 ```python
 import labelimage.clusterimg.clusterimg_test as ct
 ct()
 ```
 
-### * Deep Learning Clusterimg test
+### * Deep Learning clusterimg test
 ```python
 import labelimage.clusterimg.DL_clusterimg_test as dl_ct
 dl_ct()
 ```
 
-### * Segmentimg test
+### * segmentimg test
 ```python
 import labelimage.segmentimg.segmentimg_test as st
 st()
@@ -26,7 +26,7 @@ st()
 
 # Use the labelimage systems with:
 
-### * Clusterimg 
+### * clusterimg 
 ```python
 from labelimage.clusterimg.Clusteror import  Clusteror
 
@@ -39,7 +39,7 @@ cl = Clusteror(test_path, method, method, threshold=threshold, overwrite=True)
 cl()
 ```
 
-### * Deep Learning Clusterimg 
+### * Deep Learning clusterimg 
 ```python
 from labelimage.clusterimg.DL_ModelTrainer import ModelTrainer
 from labelimage.clusterimg.DL_Datasets import ImageDataset
@@ -57,7 +57,7 @@ dlc = DL_Clusteror(model_trainer=mt, method=method, batch_size=100, overwrite=Tr
 dlc()
 ```
 
-### * Segmentimg
+### * segmentimg
 ```python
 from labelimage.segmentimg.Segmentator import  Segmentator
 

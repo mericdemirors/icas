@@ -1,6 +1,6 @@
 # Contribute to the whole system pipeline with:
 
-## * adding new method to Clusterimg:
+## * adding new method to clusterimg:
 
 * 1- add needed parameters to Clusteror.\_\_init\_\_()
 * 2- add method name to valid_methods in Clusteror.arguman_check()
@@ -9,10 +9,10 @@
 * 5- if threading is needed, use helper_functions.thread_this() function with format: helper_functions.thread_this(function_to_pass_to_threads, list_of_parameters_to_pass_that_function), it will return the returned values in a list with same order of list_of_parameters_to_pass_that_function
 * 6- do the needed imports
 
-## * adding new deep learning model/dataset or clustering method to Deep Learning Clusterimg
+## * adding new deep learning model/dataset or clustering method to Deep Learning clusterimg
 
 #### deep learning model/dataset:
-* 1- you can add your own deep learning model and dataset with attributes and functions explained in Clusterimg README. There wont be and code additions needed for that, just pass your objects to DL_Clusteror.\_\_init\_\_()
+* 1- you can add your own deep learning model and dataset with attributes and functions explained in clusterimg README. There wont be and code additions needed for that, just pass your objects to DL_Clusteror.\_\_init\_\_()
 * 2- do the needed imports
 
 #### clustering method:
@@ -23,7 +23,7 @@
 * 5- write a fit_predict() function to your model for fitting the passed data and returning the predicted labels for them. Pay attention to matching your clustering models fit_predict() output with current models output format: numpy.ndarray of shape (n_samples,)
 * 6- do the needed imports
 
-## * adding new method to Segmentimg
+## * adding new method to segmentimg
 
 #### automatic method:
 * 1- add needed parameters to Segmentator.\_\_init\_\_()

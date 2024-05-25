@@ -5,7 +5,7 @@ try:
     from .DL_ModelTrainer import ModelTrainer # if torch and torchvision
     from .DL_Clusteror import DL_Clusteror # if torch
 except Exception as e:
-    print("Exception during 'DL' clusterimg file imports. Skipping deep learning clusterimg")
+    print("Exception during 'DL' clusterimg file imports. Skipping Deep Learning clusterimg")
     print(e)
 
 try:
