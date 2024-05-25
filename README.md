@@ -1,4 +1,4 @@
-# Labelimg
+# Labelimage
 Tool for labeling images
 
 <br/><br/>
@@ -175,7 +175,7 @@ Tool for interactively segmentating images. Main image segmenting pipeline flow 
 <br/><br/>
 
 # To user attention:
-Below libraries are not installed with labelimg since aim for __labelimg__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
+Below libraries are not installed with labelimage since aim for __labelimage__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
 ```python
 pip install torch
 pip install torchvision

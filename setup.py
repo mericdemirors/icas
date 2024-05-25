@@ -27,4 +27,4 @@ setup(
     long_description_content_type="text/markdown",
     author="mericdemirors",
     author_email="demirorsmeric@gmail.com",
-    url="https://github.com/mericdemirors/labelimg")
+    url="https://github.com/mericdemirors/labelimage")

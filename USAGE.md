@@ -1,34 +1,34 @@
-# Labelimg
-Tool for clustering and segmenting image datasets. Detailed descriptions for packages and pipelines can be found in [githup repo](https://github.com/mericdemirors/labelimg). Below is just basic usage sytle.
+# Labelimaga
+Tool for clustering and segmenting image datasets. Detailed descriptions for packages and pipelines can be found in [githup repo](https://github.com/mericdemirors/labelimage). Below is just basic usage sytle.
 
 # Test the whole system pipeline with:
 
 ### * Clusterimg test
 ```python
-import labelimg.clusterimg.clusterimg_test as ct
+import labelimage.clusterimg.clusterimg_test as ct
 ct()
 ```
 
 ### * Deep Learning Clusterimg test
 ```python
-import labelimg.clusterimg.DL_clusterimg_test as dl_ct
+import labelimage.clusterimg.DL_clusterimg_test as dl_ct
 dl_ct()
 ```
 
 ### * Segmentimg test
 ```python
-import labelimg.segmentimg.segmentimg_test as st
+import labelimage.segmentimg.segmentimg_test as st
 st()
 ```
 
 <br/><br/>
 <br/><br/>
 
-# Use the labelimg systems with:
+# Use the labelimage systems with:
 
 ### * Clusterimg 
 ```python
-from labelimg.clusterimg.Clusteror import  Clusteror
+from labelimage.clusterimg.Clusteror import  Clusteror
 
 test_path = "path/to/images"
 method = "TM"
@@ -41,10 +41,10 @@ cl()
 
 ### * Deep Learning Clusterimg 
 ```python
-from labelimg.clusterimg.DL_ModelTrainer import ModelTrainer
-from labelimg.clusterimg.DL_Datasets import ImageDataset
-from labelimg.clusterimg.DL_Models import PowerOf2s32to128
-from labelimg.clusterimg.DL_Clusteror import DL_Clusteror
+from labelimage.clusterimg.DL_ModelTrainer import ModelTrainer
+from labelimage.clusterimg.DL_Datasets import ImageDataset
+from labelimage.clusterimg.DL_Models import PowerOf2s32to128
+from labelimage.clusterimg.DL_Clusteror import DL_Clusteror
 
 device = "cpu"
 method = "kmeans"
@@ -59,7 +59,7 @@ dlc()
 
 ### * Segmentimg
 ```python
-from labelimg.segmentimg.Segmentator import  Segmentator
+from labelimage.segmentimg.Segmentator import  Segmentator
 
 test_path = "path/to/images"
 method = "graph"
@@ -74,7 +74,7 @@ sg()
 # To user attention:
 We insist you to add comments, descriptions and example usage to your contributions  
 
-Below libraries are not installed with labelimg since aim for __labelimg__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
+Below libraries are not installed with labelimage since aim for __labelimage__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
 ```python
 pip install torch
 pip install torchvision
