@@ -4,7 +4,7 @@ Tool for labeling images
 <br/><br/>
 <br/><br/>
 
-## clusterimg
+# clusterimg
 Tool for clustering mixed images.
 
 ### Main image clustering pipeline flow operates as follows:  
@@ -67,7 +67,8 @@ Sample cluster folder content:
   * [HDBSCAN from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.HDBSCAN.html)
 * all models are evaluated after clustering image features and best model is selected according to three metrics(maximizing the silhouette and calinski_harabasz scores, minimizing the davies_bouldin score):
   * [silhouette_score from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.silhouette_score.html)
-  * [davies_bouldin_score from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.davies_bouldin_score.html)
+  * [davies_bouldin_score from scikit-learn]
+(https://scikit-learn.org/stable/modules/generated/sklearn.metrics.davies_bouldin_score.html)
   * [calinski_harabasz_score from scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.calinski_harabasz_score.html)
 * best model is used to cluster the images
 * all clusters + outliers(there wont be any outlier but outlier folder is kept to match the format of main pipeline) are writed into batch's folder  
@@ -93,7 +94,7 @@ Main Flow(hard cornered item means a folder in computer, soft cornered item mean
 <br/><br/>
 <br/><br/>
 
-## segmentimg 
+# segmentimg 
 Tool for interactively segmentating images. Main image segmenting pipeline flow operates as follows:  
 
 ### 1- image is divided into segments with one of these methods. Segmented image will have labeled segments starting from 1(also edges with value of 0 if any):
