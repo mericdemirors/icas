@@ -7,7 +7,7 @@ setup(
     name="labelimg",
     version="1.0",
     packages=find_packages(),
-    description="Tool for labeling images"
+    description="Tool for labeling images",
     install_requires=[
         "numpy>=1.26.4",
         "opencv_contrib_python>=4.9.0.80", # be careful about other opencv libraries on your device
