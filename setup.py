@@ -4,7 +4,7 @@ with open("USAGE.md", "r") as f:
     usage_desc = f.read()
 
 setup(
-    name="labelimage",
+    name="icas",
     version="1.0",
     packages=find_packages(),
     description="Tool for labeling images",
@@ -27,4 +27,4 @@ setup(
     long_description_content_type="text/markdown",
     author="mericdemirors",
     author_email="demirorsmeric@gmail.com",
-    url="https://github.com/mericdemirors/labelimage")
+    url="https://github.com/mericdemirors/icas")

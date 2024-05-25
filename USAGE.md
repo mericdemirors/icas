@@ -1,34 +1,34 @@
-# Labelimaga
-Tool for clustering and segmenting image datasets. Detailed descriptions for packages and pipelines can be found in [githup repo](https://github.com/mericdemirors/labelimage). Below is just basic usage sytle.
+# icas
+Tool for clustering and segmenting image datasets. Detailed descriptions for packages and pipelines can be found in [githup repo](https://github.com/mericdemirors/icas). Below is just basic usage sytle.
 
 # Test the whole system pipeline with:
 
 ### * clusterimg test
 ```python
-import labelimage.clusterimg.clusterimg_test as ct
+import icas.clusterimg.clusterimg_test as ct
 ct()
 ```
 
 ### * Deep Learning clusterimg test
 ```python
-import labelimage.clusterimg.DL_clusterimg_test as dl_ct
+import icas.clusterimg.DL_clusterimg_test as dl_ct
 dl_ct()
 ```
 
 ### * segmentimg test
 ```python
-import labelimage.segmentimg.segmentimg_test as st
+import icas.segmentimg.segmentimg_test as st
 st()
 ```
 
 <br/><br/>
 <br/><br/>
 
-# Use the labelimage systems with:
+# Use the icas systems with:
 
 ### * clusterimg 
 ```python
-from labelimage.clusterimg.Clusteror import  Clusteror
+from icas.clusterimg.Clusteror import  Clusteror
 
 test_path = "path/to/images"
 method = "TM"
@@ -41,10 +41,10 @@ cl()
 
 ### * Deep Learning clusterimg 
 ```python
-from labelimage.clusterimg.DL_ModelTrainer import ModelTrainer
-from labelimage.clusterimg.DL_Datasets import ImageDataset
-from labelimage.clusterimg.DL_Models import PowerOf2s32to128
-from labelimage.clusterimg.DL_Clusteror import DL_Clusteror
+from icas.clusterimg.DL_ModelTrainer import ModelTrainer
+from icas.clusterimg.DL_Datasets import ImageDataset
+from icas.clusterimg.DL_Models import PowerOf2s32to128
+from icas.clusterimg.DL_Clusteror import DL_Clusteror
 
 device = "cpu"
 method = "kmeans"
@@ -59,7 +59,7 @@ dlc()
 
 ### * segmentimg
 ```python
-from labelimage.segmentimg.Segmentator import  Segmentator
+from icas.segmentimg.Segmentator import  Segmentator
 
 test_path = "path/to/images"
 method = "graph"
@@ -74,7 +74,7 @@ sg()
 # To user attention:
 We insist you to add comments, descriptions and example usage to your contributions  
 
-Below libraries are not installed with labelimage since aim for __labelimage__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
+Below libraries are not installed with icas since aim for __icas__ is to be lightweight. Advanced usage such as Deep Learning Clustering and SAM segmentation requires below installations:
 ```python
 pip install torch
 pip install torchvision
