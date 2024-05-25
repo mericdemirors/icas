@@ -3,4 +3,4 @@ test_images*
 here*
 build
 dist
-labelimage/labelimage.egg-info
+labelimage.egg-info
