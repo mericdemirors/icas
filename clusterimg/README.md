@@ -161,7 +161,7 @@ Deep Learning model trainer object.
 * criterion: criterion to use
 * scheduler: scheduler to use
 * ckpt_path: checkpoint path to model
-* model_serial_path: model signature
+* model_serial_path: model signature name in "\<path/to/image/folder\>_\<DeepLearningModelClassName\>_\<loss_type\>_MM:DD:hh:mm:ss" format. Be aware of the operating system seperators in \<path/to/image/folder\> when looking for models folder
 
 ## Functions
 
