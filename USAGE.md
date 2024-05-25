@@ -1,5 +1,5 @@
 # Image Clustering and Segmenting: icas
-Tool for clustering and segmenting image datasets. Detailed descriptions for packages and pipelines can be found in [githup repo](https://github.com/mericdemirors/icas). Below is just basic usage sytle.
+Tool for clustering and segmenting image datasets. Detailed descriptions for packages and pipelines can be found in [github repo](https://github.com/mericdemirors/icas). Below is just basic usage sytle.
 
 # Test the whole system pipeline with:
 
