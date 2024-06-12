@@ -84,6 +84,124 @@ In deep learning pipeline, main flow is preserved. Only the underlying structure
 Main Flow(hard cornered item means a folder in computer, soft cornered item means a variable held storage during run time):  
 ![main_flow](images/main_flow.png)
 
+### Computation workload and efficiency for main flow
+
+$C$: number of classes  
+$O$: number of outliers  
+$S$: number of similar items  
+
+We can separate all calculations into two type of calculations, intra and inter class calculations. For each individual class, we can think it as two graphs: $SG$(similars_graph) containing similar items and $OG$(outliers_graphs) containing outlier items.
+
+<pre>
+<code>
+<span style="color:purple;">for each batch:</span>
+    <span style="color:purple;">for ith class in batch:</span>
+        <span style="color:green;"># c_i is set of items in ith class</span>
+        <span style="color:green;"># p_i is the probability of an item being in SG</span>
+        <span style="color:lightgray;">S_i = |c_i| * p_i # number of similar items</span>
+        <span style="color:lightgray;">O_i = |c_i| * p_i # number of outlier items</span>
+        <span style="color:lightgray;">L_i = Comb(S_i-1, 2) # number of links between similar items</span>
+</code>
+</pre>
+
+#### intra-class
+Number of needed intra-class calculations for each class can be computed like this:  
+* To cover links inside $SG$: $((S_{i})-1)$ calculations  
+* To cover links inside $OG$: $\binom{O_i}{2}$ calculations  
+* Links between $SG$ and $OG$: $(O_{i})$ calculations(will be covered in inter-class calculations)  
+
+So for each class $c_{i}$ in batch, total of:  
+$((S_{i})-1) + \frac{O_i(O_i - 1)}{2}$ calculations are enough to create $SG$ and $OG$ graphs
+
+#### inter-class
+Now each $SG$ and $OG$ graph in same batch must also be compared between themself. For each class pair $(c_{i}, c_{j}$) number of needed inter-class calculations can be computed like this:  
+* $((SG_{i}), (SG_{j}))$: $1$ calculation  
+* $((OG_{i}), (OG_{j}))$: $\binom{O_i+O_j}{2}$ calculation  
+* $((SG_{i}), (OG_{j}))$: $(O_{j})$ calculation  
+* $((OG_{i}), (SG_{j}))$: $(O_{i})$ calculation  
+
+Inter-class calculations are calculated only once, so above four steps can be generalized to all classes as follows:  
+* to cover all $(SG, SG)$ graph pairs: $\frac{C(C - 1)}{2}$ calculation  
+* to cover all $(OG, OG)$ graph pairs: $\frac{O(O - 1)}{2}$ calculation  
+* to cover all $(SG, OG)$ graph pairs: $O*C$ calculation  
+
+#### batch
+So for a batch, total of:  
+$\frac{C(C - 1)}{2} + \frac{O(O - 1)}{2} + O*C$ calculations
+
+#### representatives
+After doing all batch calculations we will end up with batch folders containing cluster and outlier folders. One item from every cluster folder is selected to handle the second phase with representative items. Representative items can be thinked as a class and needed computations can be calculated as:  
+$(S_{r}-1) + \frac{O_r(O_r - 1)}{2} + O_{r}$
+
+Now if we combine all combinations in one equations, here is the total similarity computation workload of one full main clustering pipeline:
+
+
+#### for batch in dataset:  
+#### &emsp;&emsp;for ith class in batch:  
+#### &emsp;&emsp;&emsp;&emsp;$(S_{i}-1) + \frac{O_i(O_i - 1)}{2}$  
+#### &emsp;&emsp;$\frac{C(C - 1)}{2} + \frac{O(O - 1)}{2} + O*C$  
+#### $(S_{r}-1) + \frac{O_r(O_r - 1)}{2} + O_{r}$  
+
+
+To write the equations using known variables:  
+* $B$: number of batches  
+* $C$: number of classes in the dataset  
+* $p_{i}$: expected probability of class item similarity  
+* $P$: vector of expected similar items in each class: [$(c_{1}*p_{1}), (c_{2}*p_{2}), (c_{3}*p_{3})...$]  
+* $T$: vector of expected outlier items in each class: [$(|c_{1}|-c_{1}*p_{1}), (|c_{2}|-c_{2}*p_{2}), (|c_{3}|-c_{3}*p_{3})...$]  
+* $R$: expected number of representatives are $B*C$ when all classes are distributed equally to batches. Expected number of similars in representatives are $C$, outliers are $(B-1)*C$
+
+#### for batch in dataset:
+#### &emsp;&emsp;for ith class in batch:
+#### &emsp;&emsp;&emsp;&emsp;$(P_{i}-1) + \frac{T_i(T_i - 1)}{2}$ <font size="2">--> calculates each classes' SG and OG</font>
+#### &emsp;&emsp;$\frac{C(C - 1)}{2} + \frac{(\sum{T})((\sum{T}) - 1)}{2} + (\sum{T})*C$ <font size="2">--> merges SGs with OGs</font>
+#### $(C-1) + \frac{((B-1)*C)(((B-1)*C) - 1)}{2} + ((B-1)*C)$ <font size="2">--> merges representatives</font>
+
+Now since we all know the variables, we can compute the expected number of computations and how much more efficient is clustering than pairwise checking for a dataset by running below code with selected parameters(Keep in mind that below code generates the worst-case scenario for clustering and calculates approximate expected calculations. Clustering algorithm will be more efficient than these calculations with parallel threads and some additional optimizations.):  
+<pre>
+<code>
+<span style="color:purple;">import random</span>
+
+<span style="color:lightgray;">N = 20000 <span style="color:green;"> # number of items in dataset</span></span>
+<span style="color:lightgray;">C = 5 <span style="color:green;"> # number of classes</span></span>
+<span style="color:lightgray;">b = 2500 <span style="color:green;"> # batch size</span></span>
+<span style="color:lightgray;">B = N // b <span style="color:green;"> # number of batches</span></span>
+<span style="color:lightgray;">c = [f"c_{i}" for i in range(C)]</span> <span style="color:green;"> # expexted class labels</span>
+<span style="color:lightgray;">p = [0.5, 0.5, 0.5, 0.5, 0.5]</span> <span style="color:green;"> # expected similarity rating for classes</span>
+<span style="color:lightgray;">classes_and_ps = dict(map(lambda i,j : (i,j) , c,p))</span>
+
+<span style="color:lightgray;">dataset = [(str(i),random.choice(c)) for i in range(N)]</span>
+
+<span style="color:lightgray;">class_SG_OGs = []</span> <span style="color:green;"> # list to log number of computations for every class in each batch</span>
+<span style="color:lightgray;">merge_SG_OGs = []</span> <span style="color:green;"> # list to log number of computations end of every batch</span>
+
+<span style="color:purple;">for i in range(0,N, b):</span>
+    <span style="color:lightgray;">batch = dataset[i:i+b]</span>
+    <span style="color:lightgray;">Ps, Ts = [], []</span>
+    <span style="color:purple;">for c_id in c:</span>
+        <span style="color:lightgray;">class_items = [i for i in batch if i[1] == c_id]</span>
+        
+        <span style="color:lightgray;">P_i = len(class_items) * classes_and_ps[c_id]</span>
+        <span style="color:lightgray;">T_i = len(class_items) - P_i</span>
+
+        <span style="color:lightgray;">Ps.append(P_i)</span>
+        <span style="color:lightgray;">Ts.append(T_i)</span>
+
+        <span style="color:lightgray;">class_SG_OG = int((P_i-1) + (T_i)*(T_i-1)/2)</span>
+    <span style="color:lightgray;">class_SG_OGs.append(class_SG_OG)</span>
+
+    <span style="color:lightgray;">merge_SG_OG = (C*(C-1))/2 + sum(Ts)*(sum(Ts)-1)/2 + sum(Ts)*C</span>
+    <span style="color:lightgray;">merge_SG_OGs.append(merge_SG_OG)</span>
+
+<span style="color:lightgray;">merge_representatives = (C-1) + (((B-1)*C)*((B-1)*C-1))/2 + ((B-1)*C)</span>
+
+<span style="color:lightgray;">total_pairs = N*(N-1)/2</span>
+<span style="color:lightgray;">expected_calculations = sum([sum(merge_SG_OGs), sum(merge_SG_OGs), merge_representatives])</span>
+
+<span style="color:lightgray;">print(f"Saved {100 - expected_calculations / total_pairs * 100} of all computations.")</span>
+</code>
+</pre>
+
 ### Further possible optimizations:  
 * openmp optimizations
 * C/C++ optimizations
