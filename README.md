@@ -138,9 +138,9 @@ Now if we combine all combinations in one equations, here is the total similarit
 
 for batch in dataset:  
 &emsp;&emsp;for ith class in batch:  
-&emsp;&emsp;&emsp;&emsp;$(S_{i}-1) + \frac{O_i(O_i - 1)}{2}$  
-&emsp;&emsp;$\frac{C(C - 1)}{2} + \frac{O(O - 1)}{2} + O*C$  
-$(S_{r}-1) + \frac{O_r(O_r - 1)}{2} + O_{r}$  
+&emsp;&emsp;&emsp;&emsp;$`(S_{i}-1) + \frac{O_i(O_i - 1)}{2}`$  
+&emsp;&emsp;$`\frac{C(C - 1)}{2} + \frac{O(O - 1)}{2} + O*C`$  
+$`(S_{r}-1) + \frac{O_r(O_r - 1)}{2} + O_{r}`$  
 
 
 To write the equations using known variables:  
@@ -148,7 +148,7 @@ To write the equations using known variables:
 * $C$: number of classes in the dataset  
 * $p_{i}$: expected probability of class item similarity  
 * $P$: vector of expected similar items in each class: $`[(|c_{1}|*p_{1}), (|c_{2}|*p_{2}), (|c_{3}|*p_{3})...]`$  
-* $T$: vector of expected outlier items in each class: $`[(|c_{1}|-c_{1}*p_{1}), (|c_{2}|-c_{2}*p_{2}), (|c_{3}|-c_{3}*p_{3})...]`$  
+* $T$: vector of expected outlier items in each class: $`[(|c_{1}|-P_{1}), (|c_{2}|-P_{2}), (|c_{3}|-P_{3})...]`$  
 * $R$: expected number of representatives are $B*C$ when all classes are distributed equally to batches. Expected number of similars in representatives are $C$, outliers are $(B-1)*C$
 
 for batch in dataset:  
