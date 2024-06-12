@@ -136,26 +136,26 @@ $(S_{r}-1) + \frac{O_r(O_r - 1)}{2} + O_{r}$
 Now if we combine all combinations in one equations, here is the total similarity computation workload of one full main clustering pipeline:
 
 
-#### for batch in dataset:  
-#### &emsp;&emsp;for ith class in batch:  
-#### &emsp;&emsp;&emsp;&emsp;$(S_{i}-1) + \frac{O_i(O_i - 1)}{2}$  
-#### &emsp;&emsp;$\frac{C(C - 1)}{2} + \frac{O(O - 1)}{2} + O*C$  
-#### $(S_{r}-1) + \frac{O_r(O_r - 1)}{2} + O_{r}$  
+for batch in dataset:  
+&emsp;&emsp;for ith class in batch:  
+&emsp;&emsp;&emsp;&emsp;$(S_{i}-1) + \frac{O_i(O_i - 1)}{2}$  
+&emsp;&emsp;$\frac{C(C - 1)}{2} + \frac{O(O - 1)}{2} + O*C$  
+$(S_{r}-1) + \frac{O_r(O_r - 1)}{2} + O_{r}$  
 
 
 To write the equations using known variables:  
 * $B$: number of batches  
 * $C$: number of classes in the dataset  
 * $p_{i}$: expected probability of class item similarity  
-* $P$: vector of expected similar items in each class: [$(c_{1}*p_{1}), (c_{2}*p_{2}), (c_{3}*p_{3})...$]  
-* $T$: vector of expected outlier items in each class: [$(|c_{1}|-c_{1}*p_{1}), (|c_{2}|-c_{2}*p_{2}), (|c_{3}|-c_{3}*p_{3})...$]  
+* $P$: vector of expected similar items in each class: $`[(c_{1}*p_{1}), (c_{2}*p_{2}), (c_{3}*p_{3})...`$]`$  
+* $T$: vector of expected outlier items in each class: $`[(|c_{1}|-c_{1}*p_{1}), (|c_{2}|-c_{2}*p_{2}), (|c_{3}|-c_{3}*p_{3})...]`$  
 * $R$: expected number of representatives are $B*C$ when all classes are distributed equally to batches. Expected number of similars in representatives are $C$, outliers are $(B-1)*C$
 
-#### for batch in dataset:
-#### &emsp;&emsp;for ith class in batch:
-#### &emsp;&emsp;&emsp;&emsp;$(P_{i}-1) + \frac{T_i(T_i - 1)}{2}$ <font size="2">--> calculates each classes' SG and OG</font>
-#### &emsp;&emsp;$\frac{C(C - 1)}{2} + \frac{(\sum{T})((\sum{T}) - 1)}{2} + (\sum{T})*C$ <font size="2">--> merges SGs with OGs</font>
-#### $(C-1) + \frac{((B-1)*C)(((B-1)*C) - 1)}{2} + ((B-1)*C)$ <font size="2">--> merges representatives</font>
+for batch in dataset:  
+&emsp;&emsp;for ith class in batch:  
+&emsp;&emsp;&emsp;&emsp;$(P_{i}-1) + \frac{T_i(T_i - 1)}{2}$ <font size="2">--> calculates each classes' SG and OG</font>  
+&emsp;&emsp;$\frac{C(C - 1)}{2} + \frac{(\sum{T})((\sum{T}) - 1)}{2} + (\sum{T})*C$ <font size="2">--> merges SGs with OGs</font>  
+$(C-1) + \frac{((B-1)*C)(((B-1)*C) - 1)}{2} + ((B-1)*C)$ <font size="2">--> merges representatives</font>  
 
 Now since we all know the variables, we can compute the expected number of computations and how much more efficient is clustering than pairwise checking for a dataset by running below code with selected parameters(Keep in mind that below code generates the worst-case scenario for clustering and calculates approximate expected calculations. Clustering algorithm will be more efficient than these calculations with parallel threads and some additional optimizations.):  
 <pre>
