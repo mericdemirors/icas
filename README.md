@@ -147,8 +147,8 @@ To write the equations using known variables:
 * $B$: number of batches  
 * $C$: number of classes in the dataset  
 * $p_{i}$: expected probability of class item similarity  
-* $P$: vector of expected similar items in each class: $`[(|c_{1}|*p_{1}), (|c_{2}|*p_{2}), (|c_{3}|*p_{3})...`$]  
-* $T$: vector of expected outlier items in each class: $`[(|c_{1}|-c_{1}*p_{1}), (|c_{2}|-c_{2}*p_{2}), (|c_{3}|-c_{3}*p_{3})...]  
+* $P$: vector of expected similar items in each class: $`[(|c_{1}|*p_{1}), (|c_{2}|*p_{2}), (|c_{3}|*p_{3})...]`$  
+* $T$: vector of expected outlier items in each class: $`[(|c_{1}|-c_{1}*p_{1}), (|c_{2}|-c_{2}*p_{2}), (|c_{3}|-c_{3}*p_{3})...]`$  
 * $R$: expected number of representatives are $B*C$ when all classes are distributed equally to batches. Expected number of similars in representatives are $C$, outliers are $(B-1)*C$
 
 for batch in dataset:  
