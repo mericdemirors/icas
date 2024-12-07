@@ -8,7 +8,7 @@ Tool for labeling images
 Tool for clustering mixed images. Further details about classes can be found [here](clusterimg/README.md). Main image clustering pipeline flow operates as follows:  
 
 Process starts with folder full of mixed images:  
-![whole dataset](images/mixed_images.png)  
+![whole dataset](images/clusterimg/mixed_images.png)  
 
 #### 1- For each batch:  
 * image features are obtained with one of these five methods:
@@ -25,15 +25,15 @@ Process starts with folder full of mixed images:
   * TM: minimum error at [template matching from opencv](https://docs.opencv.org/4.x/df/dfb/group__imgproc__object.html#ga586ebfb0a7fb604b35a23d85391329be) is used
 
   Two image with similarity score bigger than threshold is considered similar, threshold can be given as parameter or interactively selected from set of computations over small data sample. Y axis is threshold value and X axis is the number of expected similar pairs at corresponding threshold value. Approximate number of clustered image is calculated and displayed when a threshold value is hovered:  
-  ![th_selection](images/th_select.png)  
+  ![th_selection](images/clusterimg/th_select.png)  
   (Interactive selection can be problematic on notebooks or different backend GUIs)
 * similar images are clustered with "If and X and Y image are similar, they are putted into same cluster. If any X and Y image has an image chain X-A-B-...-N-Y that has consecutive pair similarities, they are putted into same cluster." logic
 * all clusters + outliers are writed into batch's folder  
 
 A folder full of batch folders and computed image similarities are created after first step:  
-![mid result](images/mid_result_folder.png)
+![mid result](images/clusterimg/mid_result_folder.png)
 Sample batch folder content(each cluster folder has similar found images inside it):  
-![mid result](images/batch_folder.png)
+![mid result](images/clusterimg/batch_folder.png)
 
 #### 2- Merging batch folders  
 * first image from all cluster folders at every batch folder is selected as a "representative" for that cluster  
@@ -43,9 +43,9 @@ Sample batch folder content(each cluster folder has similar found images inside 
 * cluster folders are merged according to their representatives belonging cluster
 
 All batch folders are merged in one resutl folder after second step:  
-![result folder](images/final_result.png)
+![result folder](images/clusterimg/final_result.png)
 Sample cluster folder content:  
-![mid result](images/result_cluster.png)
+![mid result](images/clusterimg/result_cluster.png)
 
 ### Deep Learning supported image clustering pipeline flow operates as follows:  
 
@@ -82,7 +82,7 @@ Sample cluster folder content:
 In deep learning pipeline, main flow is preserved. Only the underlying structure for computations such as image feature extraction(done by feature extractor deep learning models) and similarity calculation(done by clustering models) are changed.  
 
 Main Flow(hard cornered item means a folder in computer, soft cornered item means a variable held storage during run time):  
-![main_flow](images/main_flow.png)
+![main_flow](images/clusterimg/main_flow.png)
 
 ### Computation workload and efficiency for main flow
 
