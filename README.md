@@ -1,5 +1,5 @@
 # Image Clustering and Segmenting: icas
-Tool for labeling images
+Python library to ease and speed up image dataset clustering, segmenting and labeling processes.
 
 <br/><br/>
 <br/><br/>
